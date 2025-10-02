@@ -94,6 +94,10 @@
                         <option value="pvp">双人对战 (PvP)</option>
                         <option value="pve">人机对战 (PvE)</option>
                     </select>
+                    <select id="difficulty" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="easy">简单</option>
+                        <option value="hard">困难</option>
+                    </select>
                     <button id="restart-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition-colors">
                         重新开始
                     </button>
@@ -148,6 +152,7 @@
             const statusDisplay = document.getElementById('status-display');
             const restartBtn = document.getElementById('restart-btn');
             const gameModeSelect = document.getElementById('game-mode');
+            const difficultySelect = document.getElementById('difficulty');
             const cubePreviewContainer = document.getElementById('cube-preview-container');
             const rulesBtn = document.getElementById('rules-btn');
             const rulesModal = document.getElementById('rules-modal');
@@ -157,6 +162,7 @@
             let currentPlayer = 1;
             let gameOver = false;
             let gameMode = 'pvp';
+            let difficulty = 'easy';
 
             const initGame = () => {
                 board = Array(BOARD_SIZE).fill(0).map(() =>
@@ -167,6 +173,7 @@
                 currentPlayer = 1;
                 gameOver = false;
                 gameMode = gameModeSelect.value;
+                difficulty = difficultySelect.value;
                 renderBoard();
                 updateStatus();
             };
@@ -373,32 +380,238 @@
                 return true;
             };
             
+            // 增强的AI算法 - 评估函数
+            const evaluateBoard = (player) => {
+                let score = 0;
+                const opponent = player === 1 ? 2 : 1;
+
+                // 评估所有可能的四子连线
+                score += evaluateLines(player, opponent);
+                
+                // 中心位置权重
+                score += evaluateCenterControl(player, opponent);
+                
+                return score;
+            };
+
+            const evaluateLines = (player, opponent) => {
+                let score = 0;
+                
+                // 评估所有可能的连线方向
+                const directions = getAllWinDirections();
+                
+                for (const direction of directions) {
+                    const lineScore = evaluateLine(direction, player, opponent);
+                    score += lineScore;
+                }
+                
+                return score;
+            };
+
+            const getAllWinDirections = () => {
+                const directions = [];
+                
+                // 1. 水平线 (同一层内)
+                for (let l = 0; l < BOARD_SIZE; l++) {
+                    // 行
+                    for (let r = 0; r < BOARD_SIZE; r++) {
+                        directions.push([[l, r, 0], [l, r, 1], [l, r, 2], [l, r, 3]]);
+                    }
+                    // 列
+                    for (let c = 0; c < BOARD_SIZE; c++) {
+                        directions.push([[l, 0, c], [l, 1, c], [l, 2, c], [l, 3, c]]);
+                    }
+                    // 对角线
+                    directions.push([[l, 0, 0], [l, 1, 1], [l, 2, 2], [l, 3, 3]]);
+                    directions.push([[l, 0, 3], [l, 1, 2], [l, 2, 1], [l, 3, 0]]);
+                }
+
+                // 2. 垂直线 (贯穿层)
+                for (let r = 0; r < BOARD_SIZE; r++) {
+                    for (let c = 0; c < BOARD_SIZE; c++) {
+                        directions.push([[0, r, c], [1, r, c], [2, r, c], [3, r, c]]);
+                    }
+                }
+
+                // 3. 空间对角线
+                for (let i = 0; i < BOARD_SIZE; i++) {
+                    // 行-层平面对角线
+                    directions.push([[0, 0, i], [1, 1, i], [2, 2, i], [3, 3, i]]);
+                    directions.push([[0, 3, i], [1, 2, i], [2, 1, i], [3, 0, i]]);
+                    // 列-层平面对角线
+                    directions.push([[0, i, 0], [1, i, 1], [2, i, 2], [3, i, 3]]);
+                    directions.push([[0, i, 3], [1, i, 2], [2, i, 1], [3, i, 0]]);
+                }
+
+                // 4. 主空间对角线
+                directions.push([[0, 0, 0], [1, 1, 1], [2, 2, 2], [3, 3, 3]]);
+                directions.push([[0, 0, 3], [1, 1, 2], [2, 2, 1], [3, 3, 0]]);
+                directions.push([[0, 3, 0], [1, 2, 1], [2, 1, 2], [3, 0, 3]]);
+                directions.push([[3, 0, 0], [2, 1, 1], [1, 2, 2], [0, 3, 3]]);
+
+                return directions;
+            };
+
+            const evaluateLine = (line, player, opponent) => {
+                let playerCount = 0;
+                let opponentCount = 0;
+                let emptyCount = 0;
+
+                for (const [l, r, c] of line) {
+                    const cell = board[l][r][c];
+                    if (cell === player) playerCount++;
+                    else if (cell === opponent) opponentCount++;
+                    else emptyCount++;
+                }
+
+                // 如果对手已经占据了这条线，这条线对我们没有价值
+                if (opponentCount > 0 && playerCount > 0) return 0;
+                
+                // 评分策略
+                if (playerCount === 4) return 10000; // 胜利
+                if (opponentCount === 4) return -10000; // 失败
+                if (playerCount === 3 && emptyCount === 1) return 500; // 即将胜利
+                if (opponentCount === 3 && emptyCount === 1) return -500; // 必须阻止
+                if (playerCount === 2 && emptyCount === 2) return 50; // 有潜力
+                if (opponentCount === 2 && emptyCount === 2) return -50; // 需要关注
+                if (playerCount === 1 && emptyCount === 3) return 5; // 基础分
+                if (opponentCount === 1 && emptyCount === 3) return -5; // 对手基础分
+
+                return 0;
+            };
+
+            const evaluateCenterControl = (player, opponent) => {
+                let score = 0;
+                const center = Math.floor(BOARD_SIZE / 2);
+                
+                // 中心位置更有价值
+                for (let l = 0; l < BOARD_SIZE; l++) {
+                    for (let r = 0; r < BOARD_SIZE; r++) {
+                        for (let c = 0; c < BOARD_SIZE; c++) {
+                            const distance = Math.abs(r - center) + Math.abs(c - center);
+                            const weight = BOARD_SIZE - distance;
+                            
+                            if (board[l][r][c] === player) {
+                                score += weight * 2;
+                            } else if (board[l][r][c] === opponent) {
+                                score -= weight * 2;
+                            }
+                        }
+                    }
+                }
+                
+                return score;
+            };
+
+            // Minimax算法实现
+            const minimax = (depth, isMaximizing, alpha = -Infinity, beta = Infinity) => {
+                // 检查游戏结束状态
+                if (checkWin(2)) return 10000 - depth; // AI胜利，深度越浅越好
+                if (checkWin(1)) return -10000 + depth; // 玩家胜利，深度越深越好
+                if (checkDraw() || depth === 0) return evaluateBoard(2);
+
+                const validMoves = getValidMoves();
+                if (validMoves.length === 0) return evaluateBoard(2);
+
+                if (isMaximizing) {
+                    let maxEval = -Infinity;
+                    for (const move of validMoves) {
+                        const level = getLandingLevel(move.row, move.col);
+                        board[level][move.row][move.col] = 2; // AI玩家
+                        
+                        const eval = minimax(depth - 1, false, alpha, beta);
+                        board[level][move.row][move.col] = 0; // 撤销移动
+                        
+                        maxEval = Math.max(maxEval, eval);
+                        alpha = Math.max(alpha, eval);
+                        if (beta <= alpha) break; // Alpha-beta剪枝
+                    }
+                    return maxEval;
+                } else {
+                    let minEval = Infinity;
+                    for (const move of validMoves) {
+                        const level = getLandingLevel(move.row, move.col);
+                        board[level][move.row][move.col] = 1; // 人类玩家
+                        
+                        const eval = minimax(depth - 1, true, alpha, beta);
+                        board[level][move.row][move.col] = 0; // 撤销移动
+                        
+                        minEval = Math.min(minEval, eval);
+                        beta = Math.min(beta, eval);
+                        if (beta <= alpha) break; // Alpha-beta剪枝
+                    }
+                    return minEval;
+                }
+            };
+
+            const getValidMoves = () => {
+                const moves = [];
+                for (let r = 0; r < BOARD_SIZE; r++) {
+                    for (let c = 0; c < BOARD_SIZE; c++) {
+                        if (board[BOARD_SIZE - 1][r][c] === 0) { // 井道未满
+                            moves.push({ row: r, col: c });
+                        }
+                    }
+                }
+                return moves;
+            };
+
+            const getBestMove = () => {
+                const validMoves = getValidMoves();
+                if (validMoves.length === 0) return null;
+
+                let bestMove = null;
+                let bestScore = -Infinity;
+                const searchDepth = difficulty === 'hard' ? 4 : 2; // 困难模式搜索更深
+
+                for (const move of validMoves) {
+                    const level = getLandingLevel(move.row, move.col);
+                    board[level][move.row][move.col] = 2; // AI玩家
+                    
+                    const score = minimax(searchDepth - 1, false);
+                    board[level][move.row][move.col] = 0; // 撤销移动
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = move;
+                    }
+                }
+
+                return bestMove;
+            };
+
             // REWRITTEN: AI logic to work with new gravity
             const aiMove = () => {
                 if (gameOver) return;
                 let bestMove = null; // {row, col}
 
-                // 1. Check if AI can win by dropping in any shaft
-                bestMove = findWinningShaft(2);
+                if (difficulty === 'hard') {
+                    // 困难模式：使用minimax算法
+                    bestMove = getBestMove();
+                } else {
+                    // 简单模式：使用原来的简单策略
+                    // 1. Check if AI can win by dropping in any shaft
+                    bestMove = findWinningShaft(2);
 
-                // 2. Check if player can win and block
-                if (!bestMove) {
-                    bestMove = findWinningShaft(1);
-                }
+                    // 2. Check if player can win and block
+                    if (!bestMove) {
+                        bestMove = findWinningShaft(1);
+                    }
 
-                // 3. If no winning/blocking move, choose a random valid shaft
-                if (!bestMove) {
-                    const validShafts = [];
-                    for (let r = 0; r < BOARD_SIZE; r++) {
-                        for (let c = 0; c < BOARD_SIZE; c++) {
-                            if (board[BOARD_SIZE - 1][r][c] === 0) { // Shaft is not full
-                                validShafts.push({ r, c });
+                    // 3. If no winning/blocking move, choose a random valid shaft
+                    if (!bestMove) {
+                        const validShafts = [];
+                        for (let r = 0; r < BOARD_SIZE; r++) {
+                            for (let c = 0; c < BOARD_SIZE; c++) {
+                                if (board[BOARD_SIZE - 1][r][c] === 0) { // Shaft is not full
+                                    validShafts.push({ r, c });
+                                }
                             }
                         }
-                    }
-                    if (validShafts.length > 0) {
-                        const randomChoice = validShafts[Math.floor(Math.random() * validShafts.length)];
-                        bestMove = { row: randomChoice.r, col: randomChoice.c };
+                        if (validShafts.length > 0) {
+                            const randomChoice = validShafts[Math.floor(Math.random() * validShafts.length)];
+                            bestMove = { row: randomChoice.r, col: randomChoice.c };
+                        }
                     }
                 }
                 
@@ -439,6 +652,7 @@
             // Event Listeners
             restartBtn.addEventListener('click', initGame);
             gameModeSelect.addEventListener('change', initGame);
+            difficultySelect.addEventListener('change', initGame);
             rulesBtn.addEventListener('click', () => rulesModal.classList.remove('hidden'));
             closeModalBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
             rulesModal.addEventListener('click', (e) => {
