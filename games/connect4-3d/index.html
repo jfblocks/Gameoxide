@@ -178,7 +178,7 @@
         /* 响应式改进 */
         @media (max-width: 1024px) {
             .scene {
-                min-h-[240px];
+                min-height: 240px; /* 修复了 min-h-[240px] */
                 padding: 30px;
                 perspective: 1600px;
             }
@@ -195,7 +195,7 @@
         
         @media (max-width: 768px) {
             .scene {
-                min-h-[200px];
+                min-height: 200px; /* 修复了 min-h-[200px] */
                 padding: 20px;
                 perspective: 1200px;
                 background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.05) 0%, rgba(0, 0, 0, 0.2) 70%);
