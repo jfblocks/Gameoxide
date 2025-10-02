@@ -39,40 +39,179 @@
         
         /* 3D Cube Preview Styles */
         .scene {
-            perspective: 1200px;
+            perspective: 1500px;
+            perspective-origin: center center;
             display: flex;
             justify-content: center;
             align-items: center;
+            background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.1) 0%, rgba(0, 0, 0, 0.3) 70%);
+            border-radius: 1rem;
+            overflow: hidden;
+            position: relative;
         }
+        
+        .scene::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
         .cube {
-            width: 200px;
-            height: 200px;
+            width: 240px;
+            height: 240px;
             position: relative;
             transform-style: preserve-3d;
-            animation: spin 25s infinite linear;
+            animation: spin 30s infinite linear;
+            filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.4));
+            z-index: 1;
         }
+        
+        .cube:hover {
+            animation-play-state: paused;
+            transform: rotateX(-25deg) rotateY(45deg) scale(1.05);
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
         .preview-cell {
             position: absolute;
-            width: 25px;
-            height: 25px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            transition: background-color 0.5s, transform 0.5s;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(4px);
         }
+        
         .preview-cell.empty {
-            background-color: rgba(75, 85, 99, 0.2);
+            background: linear-gradient(135deg, 
+                rgba(75, 85, 99, 0.15) 0%, 
+                rgba(55, 65, 81, 0.3) 50%, 
+                rgba(31, 41, 55, 0.2) 100%);
+            border-color: rgba(156, 163, 175, 0.2);
+            box-shadow: 
+                0 4px 8px rgba(0, 0, 0, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.1);
         }
+        
+        .preview-cell.empty:hover {
+            background: linear-gradient(135deg, 
+                rgba(75, 85, 99, 0.25) 0%, 
+                rgba(55, 65, 81, 0.4) 50%, 
+                rgba(31, 41, 55, 0.3) 100%);
+            transform: scale(1.1);
+        }
+        
         .preview-cell.player1 {
-            background-color: var(--p1-color);
-            box-shadow: 0 0 8px var(--p1-color);
+            background: linear-gradient(135deg, 
+                var(--p1-color) 0%, 
+                #dc2626 50%, 
+                #b91c1c 100%);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 
+                0 0 20px rgba(239, 68, 68, 0.6),
+                0 0 40px rgba(239, 68, 68, 0.3),
+                0 4px 12px rgba(0, 0, 0, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.2),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.2);
         }
+        
         .preview-cell.player2 {
-            background-color: var(--p2-color);
-            box-shadow: 0 0 8px var(--p2-color);
+            background: linear-gradient(135deg, 
+                var(--p2-color) 0%, 
+                #eab308 50%, 
+                #ca8a04 100%);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 
+                0 0 20px rgba(250, 204, 21, 0.6),
+                0 0 40px rgba(250, 204, 21, 0.3),
+                0 4px 12px rgba(0, 0, 0, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.2),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .preview-cell.player1:hover,
+        .preview-cell.player2:hover {
+            transform: scale(1.15);
+            filter: brightness(1.2);
         }
 
         @keyframes spin {
-            from { transform: rotateX(-25deg) rotateY(0deg); }
-            to { transform: rotateX(-25deg) rotateY(360deg); }
+            from { transform: rotateX(-20deg) rotateY(0deg) rotateZ(-5deg); }
+            to { transform: rotateX(-20deg) rotateY(360deg) rotateZ(-5deg); }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 20px currentColor,
+                    0 0 40px currentColor,
+                    0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 30px currentColor,
+                    0 0 60px currentColor,
+                    0 6px 16px rgba(0, 0, 0, 0.4);
+            }
+        }
+        
+        .preview-cell.player1,
+        .preview-cell.player2 {
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+        
+        /* 响应式改进 */
+        @media (max-width: 1024px) {
+            .scene {
+                min-h-[200px];
+            }
+            .cube {
+                width: 180px;
+                height: 180px;
+            }
+            .preview-cell {
+                width: 22px;
+                height: 22px;
+                border-width: 1px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .scene {
+                min-h-[160px];
+                background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.05) 0%, rgba(0, 0, 0, 0.2) 70%);
+            }
+            .cube {
+                width: 140px;
+                height: 140px;
+            }
+            .preview-cell {
+                width: 18px;
+                height: 18px;
+            }
+            .preview-cell.player1,
+            .preview-cell.player2 {
+                animation: none; /* 减少移动端动画以提升性能 */
+            }
+        }
+        
+        /* 触摸设备优化 */
+        @media (hover: none) {
+            .cube:hover {
+                transform: none;
+                transition: none;
+            }
+            .preview-cell:hover {
+                transform: none;
+            }
         }
     </style>
 </head>
@@ -119,8 +258,38 @@
                 </button>
             </div>
             <div class="bg-gray-800 p-6 rounded-xl shadow-2xl flex-grow flex flex-col">
-                <h2 class="text-2xl font-bold mb-4 text-center">立方体预览</h2>
-                <div id="cube-preview-container" class="scene flex-grow min-h-[250px]"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">立方体预览</h2>
+                    <div class="flex gap-2">
+                        <button id="pause-rotation" class="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-md transition-colors text-sm" title="暂停/继续旋转">
+                            ⏸️
+                        </button>
+                        <button id="reset-view" class="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-md transition-colors text-sm" title="重置视角">
+                            🔄
+                        </button>
+                    </div>
+                </div>
+                <div id="cube-preview-container" class="scene flex-grow min-h-[280px] relative">
+                    <div class="absolute top-2 left-2 text-xs text-gray-400 bg-black bg-opacity-30 px-2 py-1 rounded backdrop-blur-sm z-10">
+                        鼠标悬停可暂停旋转
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <div class="flex justify-center gap-4 text-sm text-gray-400">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <span>红方</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                            <span>黄方</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-gray-600 opacity-50"></div>
+                            <span>空位</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </aside>
     </div>
@@ -154,6 +323,8 @@
             const gameModeSelect = document.getElementById('game-mode');
             const difficultySelect = document.getElementById('difficulty');
             const cubePreviewContainer = document.getElementById('cube-preview-container');
+            const pauseRotationBtn = document.getElementById('pause-rotation');
+            const resetViewBtn = document.getElementById('reset-view');
             const rulesBtn = document.getElementById('rules-btn');
             const rulesModal = document.getElementById('rules-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
@@ -163,6 +334,8 @@
             let gameOver = false;
             let gameMode = 'pvp';
             let difficulty = 'easy';
+            let rotationPaused = false;
+            let cubeElement = null;
 
             const initGame = () => {
                 board = Array(BOARD_SIZE).fill(0).map(() =>
@@ -227,9 +400,26 @@
                 cubePreviewContainer.innerHTML = '';
                 const cube = document.createElement('div');
                 cube.className = 'cube';
+                cubeElement = cube;
 
-                const CELL_SIZE = 30;
-                const GAP = 15;
+                // 应用暂停状态
+                if (rotationPaused) {
+                    cube.style.animationPlayState = 'paused';
+                }
+
+                // 响应式单元格大小
+                const getResponsiveCellSize = () => {
+                    const width = window.innerWidth;
+                    if (width <= 768) {
+                        return { cellSize: 20, gap: 10 };
+                    } else if (width <= 1024) {
+                        return { cellSize: 26, gap: 13 };
+                    } else {
+                        return { cellSize: 32, gap: 16 };
+                    }
+                };
+
+                const { cellSize: CELL_SIZE, gap: GAP } = getResponsiveCellSize();
                 const TOTAL_SIZE = CELL_SIZE + GAP;
                 const offset = - (BOARD_SIZE - 1) * TOTAL_SIZE / 2;
 
@@ -251,11 +441,43 @@
                             const z = offset + r * TOTAL_SIZE;
 
                             cell.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+                            
+                            // 添加数据属性用于调试
+                            cell.dataset.level = l;
+                            cell.dataset.row = r;
+                            cell.dataset.col = c;
+                            
                             cube.appendChild(cell);
                         }
                     }
                 }
+                
+                // 保留提示文本
+                const existingHint = cubePreviewContainer.querySelector('.absolute');
                 cubePreviewContainer.appendChild(cube);
+                if (existingHint) {
+                    cubePreviewContainer.appendChild(existingHint);
+                }
+            };
+
+            const toggleRotation = () => {
+                rotationPaused = !rotationPaused;
+                if (cubeElement) {
+                    cubeElement.style.animationPlayState = rotationPaused ? 'paused' : 'running';
+                }
+                pauseRotationBtn.textContent = rotationPaused ? '▶️' : '⏸️';
+                pauseRotationBtn.title = rotationPaused ? '继续旋转' : '暂停旋转';
+            };
+
+            const resetView = () => {
+                if (cubeElement) {
+                    cubeElement.style.transform = 'rotateX(-20deg) rotateY(0deg) rotateZ(-5deg)';
+                    cubeElement.style.animation = 'none';
+                    setTimeout(() => {
+                        cubeElement.style.animation = rotationPaused ? 'spin 30s infinite linear' : 'spin 30s infinite linear';
+                        cubeElement.style.animationPlayState = rotationPaused ? 'paused' : 'running';
+                    }, 50);
+                }
             };
 
             const updateStatus = () => {
@@ -653,10 +875,20 @@
             restartBtn.addEventListener('click', initGame);
             gameModeSelect.addEventListener('change', initGame);
             difficultySelect.addEventListener('change', initGame);
+            pauseRotationBtn.addEventListener('click', toggleRotation);
+            resetViewBtn.addEventListener('click', resetView);
             rulesBtn.addEventListener('click', () => rulesModal.classList.remove('hidden'));
             closeModalBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
             rulesModal.addEventListener('click', (e) => {
                 if (e.target === rulesModal) rulesModal.classList.add('hidden');
+            });
+
+            // 响应式处理
+            window.addEventListener('resize', () => {
+                clearTimeout(window.resizeTimeout);
+                window.resizeTimeout = setTimeout(() => {
+                    renderCubePreview();
+                }, 250);
             });
 
             // Initial game start
