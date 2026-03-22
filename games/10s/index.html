@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拍十秒挑战</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* overflow: hidden; */
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #666;
+            /* margin-bottom: 30px; */
+            font-size: 0.95em;
+        }
+
+        .timer-display {
+            font-size: 5em;
+            font-weight: bold;
+            color: #333;
+            /* margin: 30px 0; */
+            font-family: 'Courier New', monospace;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .timer-display.running {
+            color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .timer-display.perfect {
+            color: #4CAF50;
+            animation: pulse 0.5s ease;
+        }
+
+        .timer-display.fail {
+            color: #f44336;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .game-btn {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            border: none;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .game-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .game-btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .game-btn.start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .game-btn.stop {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            animation: breathe 2s ease-in-out infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4); }
+            50% { box-shadow: 0 15px 40px rgba(245, 87, 108, 0.6); }
+        }
+
+        .game-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .game-btn:hover:not(:disabled) {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .game-btn:active:not(:disabled) {
+            transform: translateY(-2px) scale(0.98);
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 1.1em;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .result.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result.perfect {
+            background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+            color: #2e7d32;
+        }
+
+        .result.good {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #555;
+        }
+
+        .result.fail {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #c62828;
+        }
+
+        .diff {
+            font-size: 2em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .stats {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 1000;
+        }
+
+        .particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #ffd700;
+            border-radius: 50%;
+            animation: float 3s ease-in infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .config-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            font-size: 0.85em;
+            z-index: 100;
+        }
+
+        .config-panel label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .config-panel input {
+            width: 60px;
+            padding: 5px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .toggle-config {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            z-index: 101;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .hint {
+            color: #999;
+            font-size: 0.85em;
+            margin-top: 15px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <button class="toggle-config" onclick="toggleConfig()">⚙️ 设置</button>
+    
+    <div class="config-panel hidden" id="configPanel">
+        <label>目标时间(秒):</label>
+        <input type="number" id="targetTime" value="10" min="5" step="1">
+        <span hidden>胜率控制(0-1):</span>
+        <input hidden type="number" id="winRate" value="0.0" min="0" max="1" step="0.1">
+        <label>误差容忍(秒):</label>
+        <input disabled type="number" id="tolerance" value="0.05" step="0.05">
+        <button onclick="saveConfig()" style="width:100%;padding:8px;background:#667eea;color:white;border:none;border-radius:5px;cursor:pointer;">保存</button>
+    </div>
+
+    <div class="particles" id="particles"></div>
+
+    <div class="game-container">
+        <h1>⏱️ 拍十秒</h1>
+        <p class="subtitle">按住按钮开始，松开停止<br>尽量正好停在 10.00 秒！</p>
+        
+        <div class="timer-display" id="timerDisplay">0.00</div>
+        
+        <button class="game-btn start" id="gameBtn" 
+                onmousedown="startTimer()" 
+                onmouseup="stopTimer()"
+                ontouchstart="startTimer()" 
+                ontouchend="stopTimer()">
+            按住开始
+        </button>
+
+        <div class="result" id="result"></div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="bestDiff">--</div>
+                <div class="stat-label">最佳误差</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="attempts">0</div>
+                <div class="stat-label">尝试次数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="perfectCount">0</div>
+                <div class="stat-label">完美次数</div>
+            </div>
+        </div>
+
+        <p class="hint">提示：长按按钮开始计时，松手查看结果</p>
+    </div>
+
+    <script>
+        // ==================== 游戏配置（可修改胜率） ====================
+        const CONFIG = {
+            targetTime: 10.0,      // 目标时间（秒）
+            winRate: 0.0,          // 胜率控制（0-1，0表示必输，1表示不控制）
+            tolerance: 0.05,        // 完美判定误差范围（秒）
+            manipulationRange: 0.11 // 操控范围（秒）
+        };
+
+        // ==================== 游戏状态 ====================
+        let startTime = 0;
+        let elapsedTime = 0;
+        let isRunning = false;
+        let animationId = null;
+        let stats = {
+            attempts: 0,
+            perfectCount: 0,
+            bestDiff: Infinity
+        };
+
+        // ==================== DOM 元素 ====================
+        const timerDisplay = document.getElementById('timerDisplay');
+        const gameBtn = document.getElementById('gameBtn');
+        const resultDiv = document.getElementById('result');
+        const particlesDiv = document.getElementById('particles');
+
+        // ==================== 核心游戏逻辑 ====================
+        
+        function startTimer() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            startTime = performance.now();
+            gameBtn.classList.remove('start');
+            gameBtn.classList.add('stop');
+            gameBtn.textContent = '松开停止';
+            timerDisplay.classList.add('running');
+            resultDiv.classList.remove('show');
+            
+            // 开始动画循环
+            updateTimer();
+        }
+
+        function stopTimer() {
+            if (!isRunning) return;
+            
+            isRunning = false;
+            cancelAnimationFrame(animationId);
+            
+            // 计算原始经过时间
+            let rawTime = (performance.now() - startTime) / 1000;
+            
+            // ========== 胜率操控逻辑（核心代码） ==========
+            const manipulatedTime = manipulateTime(rawTime);
+            // ============================================
+            
+            elapsedTime = manipulatedTime;
+            
+            // 更新显示
+            timerDisplay.textContent = elapsedTime.toFixed(2);
+            timerDisplay.classList.remove('running');
+            
+            // 判定结果
+            judgeResult(elapsedTime);
+            
+            // 更新按钮状态
+            gameBtn.classList.remove('stop');
+            gameBtn.classList.add('start');
+            gameBtn.textContent = '再试一次';
+            
+            // 更新统计
+            updateStats(elapsedTime);
+        }
+
+        /**
+         * 时间操控函数 - 根据胜率调整实际显示时间
+         * 即使玩家拍中10秒，也可能被改为失败
+         */
+        function manipulateTime(actualTime) {
+            const diff = Math.abs(actualTime - CONFIG.targetTime);
+            const isWinning = diff <= CONFIG.tolerance;
+            
+            // 生成随机数决定是否操控
+            const random = Math.random();
+            
+            if (isWinning) {
+                // 玩家实际拍中了，但根据胜率决定是否让他赢
+                if (random > CONFIG.winRate) {
+                    // 操控：将时间偏移到失败区域
+                    const offset = CONFIG.tolerance + 0.05 + (Math.random() * CONFIG.manipulationRange);
+                    const direction = Math.random() > 0.5 ? 1 : -1;
+                    return CONFIG.targetTime + (offset * direction);
+                }
+                // 不操控，让他赢
+                return actualTime;
+            } else {
+                // // 玩家没拍中，但可能"仁慈"地让他赢（如果胜率很高）
+                // if (random < CONFIG.winRate && diff < 1.0) {
+                //     // 操控到完美区域
+                //     const noise = (Math.random() - 0.5) * CONFIG.tolerance;
+                //     return CONFIG.targetTime + noise;
+                // }
+                // 不操控，保持失败
+                return actualTime;
+            }
+        }
+
+        function updateTimer() {
+            if (!isRunning) return;
+            
+            const current = (performance.now() - startTime) / 1000;
+            timerDisplay.textContent = current.toFixed(2);
+            animationId = requestAnimationFrame(updateTimer);
+        }
+
+        function judgeResult(time) {
+            const diff = Math.abs(time - CONFIG.targetTime);
+            resultDiv.classList.remove('perfect', 'good', 'fail');
+            
+            let message = '';
+            let className = '';
+            
+            if (diff <= CONFIG.tolerance) {
+                // 完美！
+                message = '🎉 完美！正好是 ' + CONFIG.targetTime + ' 秒！';
+                className = 'perfect';
+                timerDisplay.classList.add('perfect');
+                createParticles();
+                stats.perfectCount++;
+            } else if (diff <= 0.5) {
+                // 不错
+                message = '👍 很不错！误差 ' + diff.toFixed(2) + ' 秒';
+                className = 'good';
+                timerDisplay.classList.add('fail');
+            } else {
+                // 失败
+                message = '😅 还差得远呢！误差 ' + diff.toFixed(2) + ' 秒';
+                className = 'fail';
+                timerDisplay.classList.add('fail');
+            }
+            
+            // 显示实际误差（可能被操控后的）
+            const actualDiff = (time - CONFIG.targetTime).toFixed(2);
+            const sign = actualDiff > 0 ? '+' : '';
+            
+            resultDiv.innerHTML = `
+                <div>${message}</div>
+                <div class="diff">${sign}${actualDiff}s</div>
+                <div style="font-size:0.8em;margin-top:5px;opacity:0.7">
+                    ${(performance.now() - startTime)/1000 > 0 ? ((performance.now() - startTime)/1000).toFixed(2) : '0.00'}s 
+                </div>
+            `;
+            resultDiv.classList.add('show', className);
+            
+            // 清除样式类
+            setTimeout(() => {
+                timerDisplay.classList.remove('perfect', 'fail');
+            }, 1000);
+        }
+
+        function updateStats(time) {
+            stats.attempts++;
+            const diff = Math.abs(time - CONFIG.targetTime);
+            
+            if (diff < stats.bestDiff) {
+                stats.bestDiff = diff;
+            }
+            
+            document.getElementById('attempts').textContent = stats.attempts;
+            document.getElementById('perfectCount').textContent = stats.perfectCount;
+            document.getElementById('bestDiff').textContent = 
+                stats.bestDiff === Infinity ? '--' : stats.bestDiff.toFixed(2) + 's';
+        }
+
+        // ==================== 特效 ====================
+        function createParticles() {
+            particlesDiv.innerHTML = '';
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    particle.style.background = `hsl(${Math.random() * 60 + 40}, 100%, 50%)`;
+                    particlesDiv.appendChild(particle);
+                    
+                    setTimeout(() => particle.remove(), 4000);
+                }, i * 50);
+            }
+        }
+
+        // ==================== 配置面板 ====================
+        function toggleConfig() {
+            const panel = document.getElementById('configPanel');
+            panel.classList.toggle('hidden');
+        }
+
+        function saveConfig() {
+            CONFIG.targetTime = parseFloat(document.getElementById('targetTime').value) || 10;
+            CONFIG.winRate = parseFloat(document.getElementById('winRate').value) || 0.3;
+            CONFIG.tolerance = parseFloat(document.getElementById('tolerance').value) || 0.1;
+            
+            document.querySelector('.subtitle').innerHTML = 
+                `按住按钮开始，松开停止<br>尽量正好停在 ${CONFIG.targetTime.toFixed(1)} 秒！`;
+            
+            toggleConfig();
+            
+            // 重置统计
+            stats = { attempts: 0, perfectCount: 0, bestDiff: Infinity };
+            document.getElementById('attempts').textContent = '0';
+            document.getElementById('perfectCount').textContent = '0';
+            document.getElementById('bestDiff').textContent = '--';
+            
+            alert(`设置已保存！\n目标时间: ${CONFIG.targetTime}s\n容错: ±${CONFIG.tolerance}s`);
+        }
+
+        // 防止移动端默认行为
+        document.addEventListener('touchstart', function(e) {
+            if (e.target === gameBtn) e.preventDefault();
+        }, { passive: false });
+        
+        document.addEventListener('touchend', function(e) {
+            if (e.target === gameBtn) e.preventDefault();
+        }, { passive: false });
+    </script>
+</body>
+</html>

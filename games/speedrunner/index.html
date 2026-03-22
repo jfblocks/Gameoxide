@@ -1,0 +1,2645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Speed Runner 3D - 动感跑酷</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #gameCanvas {
+            border: 2px solid #fff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            background: #87CEEB;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .coins {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #FFD700;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .hearts {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .heart {
+            width: 30px;
+            height: 30px;
+            background: #FF6B6B;
+            border-radius: 50%;
+            position: relative;
+            animation: heartbeat 1s infinite;
+        }
+
+        .heart::before,
+        .heart::after {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #FF6B6B;
+            border-radius: 50%;
+        }
+
+        .heart::before {
+            top: -15px;
+            left: 0;
+        }
+
+        .heart::after {
+            left: 15px;
+            top: 0;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            pointer-events: all;
+        }
+
+        .game-over h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #FF6B6B;
+        }
+
+        .game-over button {
+            background: #4ECDC4;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+
+        .game-over button:hover {
+            background: #45B7B8;
+            transform: scale(1.05);
+        }
+
+        .mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 20px;
+        }
+
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.3);
+            border: 2px solid white;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+
+        .control-btn:active {
+            background: rgba(255,255,255,0.5);
+            transform: scale(0.95);
+        }
+
+        .pause-btn {
+            position: absolute;
+            top: 20px;
+            right: 100px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.3);
+            border: 2px solid white;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            pointer-events: all;
+        }
+
+        .power-up-indicator {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .power-up-slot {
+            width: 60px;
+            height: 60px;
+            border: 2px solid white;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .power-up-slot.active {
+            background: rgba(76, 175, 80, 0.7);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: flex;
+            }
+            
+            .score, .coins {
+                font-size: 18px;
+            }
+            
+            .heart {
+                width: 25px;
+                height: 25px;
+            }
+            
+            .heart::before,
+            .heart::after {
+                width: 25px;
+                height: 25px;
+            }
+            
+            .heart::before {
+                top: -12px;
+            }
+            
+            .heart::after {
+                left: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div class="score">分数: <span id="scoreValue">0</span></div>
+            <div class="coins">金币: <span id="coinValue">0</span></div>
+            <div class="hearts" id="heartsContainer"></div>
+            <button class="pause-btn" id="pauseBtn">⏸</button>
+            
+            <div class="power-up-indicator" id="powerUpIndicator">
+                <div class="power-up-slot" id="powerUpSlot1"></div>
+                <div class="power-up-slot" id="powerUpSlot2"></div>
+            </div>
+            
+            <div class="mobile-controls" id="mobileControls">
+                <div class="control-btn" id="leftBtn">←</div>
+                <div class="control-btn" id="downBtn">↓</div>
+                <div class="control-btn" id="upBtn">↑</div>
+                <div class="control-btn" id="rightBtn">→</div>
+            </div>
+            
+            <div class="game-over" id="gameOver">
+                <h2>游戏结束!</h2>
+                <p>最终分数: <span id="finalScore">0</span></p>
+                <p>收集金币: <span id="finalCoins">0</span></p>
+                <button id="restartBtn">重新开始</button>
+                <button id="menuBtn">返回菜单</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 游戏主类
+        class Game {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.ui = {
+                    score: document.getElementById('scoreValue'),
+                    coins: document.getElementById('coinValue'),
+                    hearts: document.getElementById('heartsContainer'),
+                    gameOver: document.getElementById('gameOver'),
+                    finalScore: document.getElementById('finalScore'),
+                    finalCoins: document.getElementById('finalCoins')
+                };
+                
+                this.setupCanvas();
+                this.initGame();
+                this.setupEventListeners();
+                this.gameLoop();
+            }
+
+            setupCanvas() {
+                const maxWidth = 800;
+                const maxHeight = 600;
+                const aspectRatio = maxWidth / maxHeight;
+                
+                let width = window.innerWidth * 0.9;
+                let height = window.innerHeight * 0.8;
+                
+                if (width / height > aspectRatio) {
+                    width = height * aspectRatio;
+                } else {
+                    height = width / aspectRatio;
+                }
+                
+                this.canvas.width = width;
+                this.canvas.height = height;
+                this.scale = width / maxWidth;
+            }
+
+            initGame() {
+                // 游戏状态
+                this.gameState = 'playing'; // playing, paused, gameOver
+                this.score = 0;
+                this.coins = 0;
+                this.speed = 5;
+                this.baseSpeed = 5;
+                this.speedIncrement = 0.001;
+                this.maxSpeed = 15;
+                
+                // 玩家属性
+                this.player = {
+                    x: this.canvas.width / 2,
+                    y: this.canvas.height - 150,
+                    width: 40 * this.scale,
+                    height: 60 * this.scale,
+                    velocityY: 0,
+                    isJumping: false,
+                    isSliding: false,
+                    lane: 1, // 0, 1, 2 三条跑道
+                    lives: 3,
+                    invulnerable: false,
+                    invulnerableTime: 0
+                };
+                
+                // 跑道配置
+                this.lanes = [
+                    this.canvas.width * 0.25,
+                    this.canvas.width * 0.5,
+                    this.canvas.width * 0.75
+                ];
+                
+                // 游戏对象数组
+                this.obstacles = [];
+                this.coins = [];
+                this.powerUps = [];
+                this.particles = [];
+                this.backgrounds = [];
+                
+                // 道具系统
+                this.activePowerUps = {
+                    magnet: false,
+                    shield: false,
+                    doubleCoin: false,
+                    sprint: false
+                };
+                this.powerUpTimers = {
+                    magnet: 0,
+                    shield: 0,
+                    doubleCoin: 0,
+                    sprint: 0
+                };
+                
+                // 生成计时器
+                this.spawnTimer = 0;
+                this.coinSpawnTimer = 0;
+                this.powerUpSpawnTimer = 0;
+                
+                // 背景初始化
+                this.initBackground();
+                
+                // 更新UI
+                this.updateUI();
+                this.updateHearts();
+            }
+
+            initBackground() {
+                // 创建多层背景
+                for (let i = 0; i < 5; i++) {
+                    this.backgrounds.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height * 0.5,
+                        width: 100 * this.scale,
+                        height: 100 * this.scale,
+                        speed: (i + 1) * 0.5,
+                        type: i % 2 === 0 ? 'building' : 'cloud'
+                    });
+                }
+            }
+
+            setupEventListeners() {
+                // 键盘控制
+                document.addEventListener('keydown', (e) => {
+                    if (this.gameState !== 'playing') return;
+                    
+                    switch(e.code) {
+                        case 'Space':
+                        case 'ArrowUp':
+                            e.preventDefault();
+                            this.jump();
+                            break;
+                        case 'ArrowDown':
+                            e.preventDefault();
+                            this.slide();
+                            break;
+                        case 'ArrowLeft':
+                        case 'KeyA':
+                            e.preventDefault();
+                            this.switchLane(-1);
+                            break;
+                        case 'ArrowRight':
+                        case 'KeyD':
+                            e.preventDefault();
+                            this.switchLane(1);
+                            break;
+                        case 'KeyP':
+                            this.togglePause();
+                            break;
+                    }
+                });
+
+                // 移动端控制
+                const mobileControls = document.getElementById('mobileControls');
+                if (window.innerWidth <= 768) {
+                    this.setupMobileControls();
+                }
+
+                // 暂停按钮
+                document.getElementById('pauseBtn').addEventListener('click', () => {
+                    this.togglePause();
+                });
+
+                // 游戏结束按钮
+                document.getElementById('restartBtn').addEventListener('click', () => {
+                    this.restart();
+                });
+
+                document.getElementById('menuBtn').addEventListener('click', () => {
+                    // 这里可以添加返回菜单的逻辑
+                    this.restart();
+                });
+
+                // 窗口大小调整
+                window.addEventListener('resize', () => {
+                    this.setupCanvas();
+                    this.initGame();
+                });
+            }
+
+            setupMobileControls() {
+                const controls = {
+                    upBtn: () => this.jump(),
+                    downBtn: () => this.slide(),
+                    leftBtn: () => this.switchLane(-1),
+                    rightBtn: () => this.switchLane(1)
+                };
+
+                Object.keys(controls).forEach(id => {
+                    const btn = document.getElementById(id);
+                    btn.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        controls[id]();
+                        btn.style.background = 'rgba(255,255,255,0.5)';
+                    });
+                    
+                    btn.addEventListener('touchend', () => {
+                        btn.style.background = 'rgba(255,255,255,0.3)';
+                    });
+                });
+
+                // 触摸手势
+                let touchStartX = 0;
+                let touchStartY = 0;
+                
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                });
+
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    const touchEndX = e.changedTouches[0].clientX;
+                    const touchEndY = e.changedTouches[0].clientY;
+                    
+                    const deltaX = touchEndX - touchStartX;
+                    const deltaY = touchEndY - touchStartY;
+                    
+                    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                        if (Math.abs(deltaX) > 50) {
+                            this.switchLane(deltaX > 0 ? 1 : -1);
+                        }
+                    } else {
+                        if (Math.abs(deltaY) > 50) {
+                            if (deltaY < 0) {
+                                this.jump();
+                            } else {
+                                this.slide();
+                            }
+                        }
+                    }
+                });
+            }
+
+            jump() {
+                if (!this.player.isJumping && !this.player.isSliding) {
+                    this.player.isJumping = true;
+                    this.player.velocityY = -15 * this.scale;
+                    this.createParticles(this.player.x, this.player.y + this.player.height, 'jump');
+                }
+            }
+
+            slide() {
+                if (!this.player.isJumping && !this.player.isSliding) {
+                    this.player.isSliding = true;
+                    this.player.height = 30 * this.scale;
+                    setTimeout(() => {
+                        this.player.isSliding = false;
+                        this.player.height = 60 * this.scale;
+                    }, 500);
+                }
+            }
+
+            switchLane(direction) {
+                const newLane = this.player.lane + direction;
+                if (newLane >= 0 && newLane <= 2) {
+                    this.player.lane = newLane;
+                    this.player.x = this.lanes[newLane];
+                    this.createParticles(this.player.x, this.player.y + this.player.height, 'lane');
+                }
+            }
+
+            togglePause() {
+                if (this.gameState === 'playing') {
+                    this.gameState = 'paused';
+                    document.getElementById('pauseBtn').textContent = '▶';
+                } else if (this.gameState === 'paused') {
+                    this.gameState = 'playing';
+                    document.getElementById('pauseBtn').textContent = '⏸';
+                }
+            }
+
+            update() {
+                if (this.gameState !== 'playing') return;
+
+                // 更新速度
+                this.speed = Math.min(this.speed + this.speedIncrement, this.maxSpeed);
+
+                // 更新玩家
+                this.updatePlayer();
+
+                // 更新道具效果
+                this.updatePowerUps();
+
+                // 生成游戏对象
+                this.spawnObjects();
+
+                // 更新游戏对象
+                this.updateObstacles();
+                this.updateCoins();
+                this.updatePowerUpsObjects();
+                this.updateParticles();
+                this.updateBackground();
+
+                // 碰撞检测
+                this.checkCollisions();
+
+                // 更新分数
+                this.score += Math.floor(this.speed / 10);
+
+                // 更新UI
+                this.updateUI();
+            }
+
+            updatePlayer() {
+                // 重力
+                if (this.player.isJumping) {
+                    this.player.velocityY += 0.8 * this.scale;
+                    this.player.y += this.player.velocityY;
+
+                    if (this.player.y >= this.canvas.height - 150) {
+                        this.player.y = this.canvas.height - 150;
+                        this.player.isJumping = false;
+                        this.player.velocityY = 0;
+                    }
+                }
+
+                // 无敌时间
+                if (this.player.invulnerable) {
+                    this.player.invulnerableTime--;
+                    if (this.player.invulnerableTime <= 0) {
+                        this.player.invulnerable = false;
+                    }
+                }
+            }
+
+            updatePowerUps() {
+                Object.keys(this.powerUpTimers).forEach(key => {
+                    if (this.powerUpTimers[key] > 0) {
+                        this.powerUpTimers[key]--;
+                        if (this.powerUpTimers[key] <= 0) {
+                            this.activePowerUps[key] = false;
+                            this.updatePowerUpUI();
+                        }
+                    }
+                });
+            }
+
+            spawnObjects() {
+                // 生成障碍物
+                this.spawnTimer++;
+                if (this.spawnTimer > 60 + Math.random() * 60) {
+                    this.spawnObstacle();
+                    this.spawnTimer = 0;
+                }
+
+                // 生成金币
+                this.coinSpawnTimer++;
+                if (this.coinSpawnTimer > 30 + Math.random() * 30) {
+                    this.spawnCoin();
+                    this.coinSpawnTimer = 0;
+                }
+
+                // 生成道具
+                this.powerUpSpawnTimer++;
+                if (this.powerUpSpawnTimer > 300 + Math.random() * 300) {
+                    this.spawnPowerUp();
+                    this.powerUpSpawnTimer = 0;
+                }
+            }
+
+            spawnObstacle() {
+                const types = ['upper', 'lower', 'full'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const lane = Math.floor(Math.random() * 3);
+                
+                this.obstacles.push({
+                    x: this.lanes[lane],
+                    y: type === 'upper' ? this.canvas.height - 200 : 
+                        type === 'lower' ? this.canvas.height - 100 : 
+                        this.canvas.height - 150,
+                    width: 40 * this.scale,
+                    height: type === 'lower' ? 40 * this.scale : 60 * this.scale,
+                    type: type,
+                    lane: lane
+                });
+            }
+
+            spawnCoin() {
+                const lane = Math.floor(Math.random() * 3);
+                const pattern = Math.floor(Math.random() * 3); // 0: 单个, 1: 直线, 2: 弧线
+                
+                if (pattern === 0) {
+                    this.coins.push({
+                        x: this.lanes[lane],
+                        y: -30,
+                        width: 20 * this.scale,
+                        height: 20 * this.scale,
+                        collected: false
+                    });
+                } else if (pattern === 1) {
+                    for (let i = 0; i < 5; i++) {
+                        this.coins.push({
+                            x: this.lanes[lane],
+                            y: -30 - i * 40,
+                            width: 20 * this.scale,
+                            height: 20 * this.scale,
+                            collected: false
+                        });
+                    }
+                } else {
+                    for (let i = 0; i < 3; i++) {
+                        this.coins.push({
+                            x: this.lanes[(lane + i) % 3],
+                            y: -30 - i * 40,
+                            width: 20 * this.scale,
+                            height: 20 * this.scale,
+                            collected: false
+                        });
+                    }
+                }
+            }
+
+            spawnPowerUp() {
+                const types = ['magnet', 'shield', 'doubleCoin', 'sprint'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const lane = Math.floor(Math.random() * 3);
+                
+                this.powerUps.push({
+                    x: this.lanes[lane],
+                    y: -30,
+                    width: 30 * this.scale,
+                    height: 30 * this.scale,
+                    type: type,
+                    rotation: 0
+                });
+            }
+
+            updateObstacles() {
+                for (let i = this.obstacles.length - 1; i >= 0; i--) {
+                    const obstacle = this.obstacles[i];
+                    obstacle.y += this.speed;
+                    
+                    if (obstacle.y > this.canvas.height) {
+                        this.obstacles.splice(i, 1);
+                    }
+                }
+            }
+
+            updateCoins() {
+                for (let i = this.coins.length - 1; i >= 0; i--) {
+                    const coin = this.coins[i];
+                    coin.y += this.speed;
+                    
+                    // 磁铁效果
+                    if (this.activePowerUps.magnet) {
+                        const dx = this.player.x - coin.x;
+                        const dy = this.player.y - coin.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 150 * this.scale) {
+                            coin.x += dx * 0.1;
+                            coin.y += dy * 0.1;
+                        }
+                    }
+                    
+                    if (coin.y > this.canvas.height) {
+                        this.coins.splice(i, 1);
+                    }
+                }
+            }
+
+            updatePowerUpsObjects() {
+                for (let i = this.powerUps.length - 1; i >= 0; i--) {
+                    const powerUp = this.powerUps[i];
+                    powerUp.y += this.speed;
+                    powerUp.rotation += 0.1;
+                    
+                    if (powerUp.y > this.canvas.height) {
+                        this.powerUps.splice(i, 1);
+                    }
+                }
+            }
+
+            updateParticles() {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const particle = this.particles[i];
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.life--;
+                    particle.alpha = particle.life / 30;
+                    
+                    
+                    btn.addEventListener('touchend', () => {
+                        btn.style.background = 'rgba(255,255,255,0.3)';
+                    });
+                }
+
+                // 触摸滑动控制
+                let touchStartX = 0;
+                let touchStartY = 0;
+                
+                this.canvas.addEventListener('touchstart', (e) => {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                });
+
+                this.canvas.addEventListener('touchend', (e) => {
+                    const touchEndX = e.changedTouches[0].clientX;
+                    const touchEndY = e.changedTouches[0].clientY;
+                    
+                    const deltaX = touchEndX - touchStartX;
+                    const deltaY = touchEndY - touchStartY;
+                    
+                    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                        // 水平滑动
+                        if (Math.abs(deltaX) > 50) {
+                            this.switchLane(deltaX > 0 ? 1 : -1);
+                        }
+                    } else {
+                        // 垂直滑动
+                        if (Math.abs(deltaY) > 50) {
+                            if (deltaY < 0) {
+                                this.jump();
+                            } else {
+                                this.slide();
+                            }
+                        }
+                    }
+                });
+            }
+
+            jump() {
+                if (!this.player.isJumping && !this.player.isSliding) {
+                    this.player.velocityY = -15 * this.scale;
+                    this.player.isJumping = true;
+                    this.createParticle(this.player.x, this.player.y + this.player.height/2, 'jump');
+                }
+            }
+
+            slide() {
+                if (!this.player.isJumping && !this.player.isSliding) {
+                    this.player.isSliding = true;
+                    this.player.height = 30 * this.scale;
+                    this.player.y += 30 * this.scale;
+                    
+                    setTimeout(() => {
+                        this.player.isSliding = false;
+                        this.player.height = 60 * this.scale;
+                        this.player.y -= 30 * this.scale;
+                    }, 500);
+                }
+            }
+
+            switchLane(direction) {
+                const newLane = this.player.lane + direction;
+                if (newLane >= 0 && newLane <= 2) {
+                    this.player.lane = newLane;
+                    this.player.x = this.lanes[newLane];
+                    this.createParticle(this.player.x, this.player.y + this.player.height/2, 'lane');
+                }
+            }
+
+            spawnObstacle() {
+                const types = ['up', 'down', 'full'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                
+                let obstacle = {
+                    x: this.lanes[Math.floor(Math.random() * 3)],
+                    y: -100 * this.scale,
+                    width: 50 * this.scale,
+                    height: 50 * this.scale,
+                    type: type,
+                    color: this.getObstacleColor(type)
+                };
+
+                switch(type) {
+                    case 'up':
+                        obstacle.y = -50 * this.scale;
+                        obstacle.height = 80 * this.scale;
+                        break;
+                    case 'down':
+                        obstacle.y = -150 * this.scale;
+                        obstacle.height = 60 * this.scale;
+                        break;
+                    case 'full':
+                        obstacle.y = -100 * this.scale;
+                        obstacle.width = 60 * this.scale;
+                        obstacle.height = 120 * this.scale;
+                        break;
+                }
+
+                this.obstacles.push(obstacle);
+            }
+
+            spawnCoin() {
+                const coin = {
+                    x: this.lanes[Math.floor(Math.random() * 3)],
+                    y: -50 * this.scale,
+                    width: 30 * this.scale,
+                    height: 30 * this.scale,
+                    rotation: 0,
+                    collected: false
+                };
+                this.coins.push(coin);
+            }
+
+            spawnPowerUp() {
+                const types = ['magnet', 'shield', 'doubleCoin', 'sprint'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                
+                const powerUp = {
+                    x: this.lanes[Math.floor(Math.random() * 3)],
+                    y: -50 * this.scale,
+                    width: 40 * this.scale,
+                    height: 40 * this.scale,
+                    type: type,
+                    rotation: 0
+                };
+                this.powerUps.push(powerUp);
+            }
+
+            getObstacleColor(type) {
+                switch(type) {
+                    case 'up': return '#ff6b6b';
+                    case 'down': return '#4ecdc4';
+                    case 'full': return '#45b7d1';
+                    default: return '#ff6b6b';
+                }
+            }
+
+            update(deltaTime) {
+                if (this.gameState !== 'playing') return;
+
+                // 更新速度
+                this.speed = Math.min(this.speed + this.speedIncrement, this.maxSpeed);
+                
+                // 更新玩家
+                this.updatePlayer(deltaTime);
+                
+                // 更新道具计时器
+                this.updatePowerUps(deltaTime);
+                
+                // 生成对象
+                this.spawnTimer++;
+                this.coinSpawnTimer++;
+                this.powerUpSpawnTimer++;
+                
+                if (this.spawnTimer > 60) {
+                    this.spawnObstacle();
+                    this.spawnTimer = 0;
+                }
+                
+                if (this.coinSpawnTimer > 30) {
+                    if (Math.random() < 0.7) this.spawnCoin();
+                    this.coinSpawnTimer = 0;
+                }
+                
+                if (this.powerUpSpawnTimer > 300) {
+                    if (Math.random() < 0.3) this.spawnPowerUp();
+                    this.powerUpSpawnTimer = 0;
+                }
+                
+                // 更新游戏对象
+                this.updateObstacles();
+                this.updateCoins();
+                this.updatePowerUps();
+                this.updateParticles();
+                this.updateBackground();
+                
+                // 检测碰撞
+                this.checkCollisions();
+                
+                // 更新分数
+                this.score += Math.floor(this.speed / 2);
+                this.updateUI();
+            }
+
+            updatePlayer(deltaTime) {
+                // 重力
+                if (this.player.isJumping) {
+                    this.player.velocityY += 0.8 * this.scale;
+                    this.player.y += this.player.velocityY;
+                    
+                    // 着陆检测
+                    if (this.player.y >= this.canvas.height - 150 * this.scale) {
+                        this.player.y = this.canvas.height - 150 * this.scale;
+                        this.player.velocityY = 0;
+                        this.player.isJumping = false;
+                    }
+                }
+                
+                // 更新无敌时间
+                if (this.player.invulnerable) {
+                    this.player.invulnerableTime--;
+                    if (this.player.invulnerableTime <= 0) {
+                        this.player.invulnerable = false;
+                    }
+                }
+            }
+
+            updateObstacles() {
+                for (let i = this.obstacles.length - 1; i >= 0; i--) {
+                    this.obstacles[i].y += this.speed;
+                    
+                    if (this.obstacles[i].y > this.canvas.height) {
+                        this.obstacles.splice(i, 1);
+                    }
+                }
+            }
+
+            updateCoins() {
+                for (let i = this.coins.length - 1; i >= 0; i--) {
+                    const coin = this.coins[i];
+                    coin.y += this.speed;
+                    coin.rotation += 0.1;
+                    
+                    // 磁铁效果
+                    if (this.activePowerUps.magnet) {
+                        const dx = this.player.x - coin.x;
+                        const dy = this.player.y - coin.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 150 * this.scale) {
+                            coin.x += dx * 0.1;
+                            coin.y += dy * 0.1;
+                        }
+                    }
+                    
+                    if (coin.y > this.canvas.height) {
+                        this.coins.splice(i, 1);
+                    }
+                }
+            }
+
+            updatePowerUps() {
+                // 更新道具计时器
+                Object.keys(this.powerUpTimers).forEach(key => {
+                    if (this.powerUpTimers[key] > 0) {
+                        this.powerUpTimers[key]--;
+                        if (this.powerUpTimers[key] <= 0) {
+                            this.activePowerUps[key] = false;
+                            this.updatePowerUpUI();
+                        }
+                    }
+                });
+                
+                // 更新道具对象
+                for (let i = this.powerUps.length - 1; i >= 0; i--) {
+                    const powerUp = this.powerUps[i];
+                    powerUp.y += this.speed;
+                    powerUp.rotation += 0.05;
+                    
+                    if (powerUp.y > this.canvas.height) {
+                        this.powerUps.splice(i, 1);
+                    }
+                }
+            }
+
+            updateParticles() {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const particle = this.particles[i];
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.life--;
+                    
+                    if (particle.life <= 0) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+
+            updateBackground() {
+                this.backgrounds.forEach(bg => {
+                    bg.y += bg.speed;
+                    
+                    if (bg.y > this.canvas.height) {
+                        bg.y = -bg.height;
+                        bg.x = Math.random() * this.canvas.width;
+                    }
+                });
+            }
+
+            checkCollisions() {
+                // 检测障碍物碰撞
+                if (!this.player.invulnerable) {
+                    for (let obstacle of this.obstacles) {
+                        if (this.isColliding(this.player, obstacle)) {
+                            this.takeDamage();
+                            break;
+                        }
+                    }
+                }
+                
+                // 检测金币碰撞
+                for (let i = this.coins.length - 1; i >= 0; i--) {
+                    if (this.isColliding(this.player, this.coins[i])) {
+                        const coinValue = this.activePowerUps.doubleCoin ? 2 : 1;
+                        this.coins += coinValue;
+                        this.score += 50;
+                        this.createParticle(this.coins[i].x, this.coins[i].y, 'coin');
+                        this.coins.splice(i, 1);
+                    }
+                }
+                
+                // 检测道具碰撞
+                for (let i = this.powerUps.length - 1; i >= 0; i--) {
+                    if (this.isColliding(this.player, this.powerUps[i])) {
+                        this.activatePowerUp(this.powerUps[i].type);
+                        this.createParticle(this.powerUps[i].x, this.powerUps[i].y, 'powerup');
+                        this.powerUps.splice(i, 1);
+                    }
+                }
+            }
+
+            isColliding(rect1, rect2) {
+                return rect1.x < rect2.x + rect2.width &&
+                       rect1.x + rect1.width > rect2.x &&
+                       rect1.y < rect2.y + rect2.height &&
+                       rect1.y + rect1.height > rect2.y;
+            }
+
+            takeDamage() {
+                if (this.player.invulnerable) return;
+                
+                this.player.lives--;
+                this.player.invulnerable = true;
+                this.player.invulnerableTime = 120; // 2秒无敌
+                
+                this.updateHearts();
+                this.createParticle(this.player.x, this.player.y, 'damage');
+                
+                if (this.player.lives <= 0) {
+                    this.gameOver();
+                }
+            }
+
+            activatePowerUp(type) {
+                this.activePowerUps[type] = true;
+                this.powerUpTimers[type] = 300; // 5秒持续时间
+                
+                switch(type) {
+                    case 'sprint':
+                        this.speed = this.maxSpeed;
+                        break;
+                    case 'shield':
+                        this.player.invulnerable = true;
+                        this.player.invulnerableTime = 300;
+                        break;
+                }
+                
+                this.updatePowerUpUI();
+            }
+
+            createParticle(x, y, type) {
+                const particleCount = type === 'damage' ? 10 : 5;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = {
+                        x: x,
+                        y: y,
+                        vx: (Math.random() - 0.5) * 10 * this.scale,
+                        vy: (Math.random() - 0.5) * 10 * this.scale,
+                        life: 30,
+                        color: this.getParticleColor(type),
+                        size: Math.random() * 5 * this.scale + 2 * this.scale
+                    };
+                    this.particles.push(particle);
+                }
+            }
+
+            getParticleColor(type) {
+                switch(type) {
+                    case 'coin': return '#ffd700';
+                    case 'powerup': return '#4ecdc4';
+                    case 'damage': return '#ff6b6b';
+                    case 'jump': return '#45b7d1';
+                    case 'lane': return '#96ceb4';
+                    default: return '#ffffff';
+                }
+            }
+
+            updateUI() {
+                this.ui.score.textContent = this.score;
+                this.ui.coins.textContent = this.coins;
+            }
+
+            updateHearts() {
+                this.ui.hearts.innerHTML = '';
+                for (let i = 0; i < this.player.lives; i++) {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart';
+                    this.ui.hearts.appendChild(heart);
+                }
+            }
+
+            updatePowerUpUI() {
+                const slots = [document.getElementById('powerUpSlot1'), document.getElementById('powerUpSlot2')];
+                const activeTypes = Object.keys(this.activePowerUps).filter(type => this.activePowerUps[type]);
+                
+                slots.forEach((slot, index) => {
+                    if (index < activeTypes.length) {
+                        slot.textContent = this.getPowerUpIcon(activeTypes[index]);
+                        slot.classList.add('active');
+                    } else {
+                        slot.textContent = '';
+                        slot.classList.remove('active');
+                    }
+                });
+            }
+
+            getPowerUpIcon(type) {
+                const icons = {
+                    magnet: '🧲',
+                    shield: '🛡️',
+                    doubleCoin: '💰',
+                    sprint: '⚡'
+                };
+                return icons[type] || '';
+            }
+
+            gameOver() {
+                this.gameState = 'gameOver';
+                this.ui.gameOver.style.display = 'block';
+                this.ui.finalScore.textContent = this.score;
+                this.ui.finalCoins.textContent = this.coinCount;
+            }
+
+            togglePause() {
+                if (this.gameState === 'playing') {
+                    this.gameState = 'paused';
+                    document.getElementById('pauseBtn').textContent = '▶';
+                } else if (this.gameState === 'paused') {
+                    this.gameState = 'playing';
+                    document.getElementById('pauseBtn').textContent = '⏸';
+                }
+            }
+
+            restart() {
+                this.ui.gameOver.style.display = 'none';
+                this.initGame();
+            }
+
+            render() {
+                // 清空画布
+                this.ctx.fillStyle = '#1a1a2e';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制背景
+                this.drawBackground();
+                
+                // 绘制跑道
+                this.drawLanes();
+                
+                // 绘制游戏对象
+                this.drawObstacles();
+                this.drawCoins();
+                this.drawPowerUps();
+                this.drawPlayer();
+                this.drawParticles();
+                
+                // 绘制效果
+                if (this.player.invulnerable && this.player.invulnerableTime % 10 < 5) {
+                    // 无敌闪烁效果
+                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                }
+            }
+
+            drawBackground() {
+                this.backgrounds.forEach(bg => {
+                    this.ctx.save();
+                    
+                    if (bg.type === 'building') {
+                        // 绘制建筑物
+                        this.ctx.fillStyle = '#16213e';
+                        this.ctx.fillRect(bg.x, bg.y, bg.width, bg.height);
+                        
+                        // 窗户
+                        this.ctx.fillStyle = '#ffd700';
+                        for (let i = 0; i < 3; i++) {
+                            for (let j = 0; j < 4; j++) {
+                                if (Math.random() > 0.3) {
+                                    this.ctx.fillRect(
+                                        bg.x + 10 * this.scale + i * 25 * this.scale,
+                                        bg.y + 10 * this.scale + j * 20 * this.scale,
+                                        15 * this.scale,
+                                        15 * this.scale
+                                    );
+                                }
+                            }
+                        }
+                    } else {
+                        // 绘制云朵
+                        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                        this.ctx.beginPath();
+                        this.ctx.arc(bg.x + 25 * this.scale, bg.y + 25 * this.scale, 25 * this.scale, 0, Math.PI * 2);
+                        this.ctx.arc(bg.x + 45 * this.scale, bg.y + 25 * this.scale, 35 * this.scale, 0, Math.PI * 2);
+                        this.ctx.arc(bg.x + 65 * this.scale, bg.y + 25 * this.scale, 25 * this.scale, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                    
+                    this.ctx.restore();
+                });
+            }
+
+            drawLanes() {
+                // 绘制跑道线
+                this.ctx.strokeStyle = '#45b7d1';
+                this.ctx.lineWidth = 3 * this.scale;
+                this.ctx.setLineDash([20 * this.scale, 10 * this.scale]);
+                
+                for (let i = 0; i < 2; i++) {
+                    const x = this.lanes[i] + (this.lanes[i + 1] - this.lanes[i]) / 2;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                }
+                
+                this.ctx.setLineDash([]);
+            }
+
+            drawPlayer() {
+                this.ctx.save();
+                
+                // 玩家主体
+                this.ctx.fillStyle = this.player.invulnerable && this.player.invulnerableTime % 10 < 5 ? 
+                    'rgba(255, 255, 255, 0.5)' : '#4ecdc4';
+                this.ctx.fillRect(
+                    this.player.x - this.player.width/2,
+                    this.player.y - this.player.height/2,
+                    this.player.width,
+                    this.player.height
+                );
+                
+                // 护盾效果
+                if (this.activePowerUps.shield) {
+                    this.ctx.strokeStyle = '#4ecdc4';
+                    this.ctx.lineWidth = 3 * this.scale;
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.player.x, this.player.y, this.player.width, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                }
+                
+                // 眼睛
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillrgba(255,255,255,0.5);
+                
+                    
+				btn.addEventListener('touchend', () => {
+					btn.style.background = 'rgba(255,255,255,0.3)';
+				});
+                
+
+                // 触摸滑动控制
+                let touchStartX = 0;
+                let touchStartY = 0;
+
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                });
+
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    const touchEndX = e.changedTouches[0].clientX;
+                    const touchEndY = e.changedTouches[0].clientY;
+                    
+                    const deltaX = touchEndX - touchStartX;
+                    const deltaY = touchEndY - touchStartY;
+                    
+                    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                        if (Math.abs(deltaX) > 50) {
+                            if (deltaX > 0) {
+                                this.switchLane(1);
+                            } else {
+                                this.switchLane(-1);
+                            }
+                        }
+                    } else {
+                        if (Math.abs(deltaY) > 50) {
+                            if (deltaY < 0) {
+                                this.jump();
+                            } else {
+                                this.slide();
+                            }
+                        }
+                    }
+                });
+            }
+
+            jump() {
+                if (!this.player.isJumping && !this.player.isSliding) {
+                    this.player.velocityY = -15 * this.scale;
+                    this.player.isJumping = true;
+                    this.createParticles(this.player.x, this.player.y + this.player.height, 'jump');
+                }
+            }
+
+            slide() {
+                if (!this.player.isJumping && !this.player.isSliding) {
+                    this.player.isSliding = true;
+                    this.player.height = 30 * this.scale;
+                    this.player.y += 30 * this.scale;
+                    
+                    setTimeout(() => {
+                        this.player.isSliding = false;
+                        this.player.height = 60 * this.scale;
+                        this.player.y -= 30 * this.scale;
+                    }, 500);
+                }
+            }
+
+            switchLane(direction) {
+                const newLane = this.player.lane + direction;
+                if (newLane >= 0 && newLane <= 2) {
+                    this.player.lane = newLane;
+                    this.player.x = this.lanes[newLane];
+                    
+                    // 添加切换动画
+                    this.createParticles(this.player.x, this.player.y + this.player.height / 2, 'lane');
+                }
+            }
+
+            createParticles(x, y, type) {
+                const particleCount = type === 'jump' ? 8 : 5;
+                const color = type === 'jump' ? '#4CAF50' : '#2196F3';
+                
+                for (let i = 0; i < particleCount; i++) {
+                    this.particles.push({
+                        x: x + (Math.random() - 0.5) * 20,
+                        y: y,
+                        vx: (Math.random() - 0.5) * 5,
+                        vy: -Math.random() * 5 - 2,
+                        size: Math.random() * 5 + 2,
+                        color: color,
+                        life: 1
+                    });
+                }
+            }
+
+            spawnObstacle() {
+                const types = ['upper', 'lower', 'full'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const lane = Math.floor(Math.random() * 3);
+                
+                let obstacle = {
+                    x: this.lanes[lane],
+                    lane: lane,
+                    type: type,
+                    width: 40 * this.scale,
+                    color: '#F44336'
+                };
+                
+                switch(type) {
+                    case 'upper':
+                        obstacle.y = this.canvas.height - 200 * this.scale;
+                        obstacle.height = 80 * this.scale;
+                        break;
+                    case 'lower':
+                        obstacle.y = this.canvas.height - 120 * this.scale;
+                        obstacle.height = 40 * this.scale;
+                        break;
+                    case 'full':
+                        obstacle.y = this.canvas.height - 200 * this.scale;
+                        obstacle.height = 120 * this.scale;
+                        break;
+                }
+                
+                this.obstacles.push(obstacle);
+            }
+
+            spawnCoins() {
+                const lane = Math.floor(Math.random() * 3);
+                const coinCount = Math.floor(Math.random() * 5) + 3;
+                const y = this.canvas.height - (100 + Math.random() * 100) * this.scale;
+                
+                for (let i = 0; i < coinCount; i++) {
+                    this.coins.push({
+                        x: this.lanes[lane],
+                        y: y - i * 30 * this.scale,
+                        width: 20 * this.scale,
+                        height: 20 * this.scale,
+                        collected: false
+                    });
+                }
+            }
+
+            spawnPowerUp() {
+                const types = ['magnet', 'shield', 'doubleCoin', 'sprint'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const lane = Math.floor(Math.random() * 3);
+                
+                this.powerUps.push({
+                    x: this.lanes[lane],
+                    y: this.canvas.height - 150 * this.scale,
+                    width: 30 * this.scale,
+                    height: 30 * this.scale,
+                    type: type,
+                    icon: this.getPowerUpIcon(type)
+                });
+            }
+
+            getPowerUpIcon(type) {
+                const icons = {
+                    magnet: '🧲',
+                    shield: '🛡️',
+                    doubleCoin: '💰',
+                    sprint: '⚡'
+                };
+                return icons[type];
+            }
+
+            update(deltaTime) {
+                if (this.gameState !== 'playing') return;
+                
+                // 更新速度
+                this.speed = Math.min(this.speed + this.speedIncrement, this.maxSpeed);
+                
+                // 更新玩家
+                this.updatePlayer(deltaTime);
+                
+                // 更新背景
+                this.updateBackground();
+                
+                // 更新游戏对象
+                this.updateObstacles();
+                this.updateCoins();
+                this.updatePowerUps();
+                this.updateParticles(deltaTime);
+                
+                // 更新道具计时器
+                this.updatePowerUpTimers(deltaTime);
+                
+                // 生成新对象
+                this.spawnTimer += deltaTime;
+                this.coinSpawnTimer += deltaTime;
+                this.powerUpSpawnTimer += deltaTime;
+                
+                if (this.spawnTimer > 1000 / this.speed) {
+                    this.spawnObstacle();
+                    this.spawnTimer = 0;
+                }
+                
+                if (this.coinSpawnTimer > 2000 / this.speed) {
+                    this.spawnCoins();
+                    this.coinSpawnTimer = 0;
+                }
+                
+                if (this.powerUpSpawnTimer > 5000 / this.speed) {
+                    this.spawnPowerUp();
+                    this.powerUpSpawnTimer = 0;
+                }
+                
+                // 更新分数
+                this.score += Math.floor(this.speed / 10);
+                
+                // 检查碰撞
+                this.checkCollisions();
+            }
+
+            updatePlayer(deltaTime) {
+                // 重力
+                if (this.player.isJumping) {
+                    this.player.velocityY += 0.8 * this.scale;
+                    this.player.y += this.player.velocityY;
+                    
+                    if (this.player.y >= this.canvas.height - 150 * this.scale) {
+                        this.player.y = this.canvas.height - 150 * this.scale;
+                        this.player.velocityY = 0;
+                        this.player.isJumping = false;
+                    }
+                }
+                
+                // 无敌时间
+                if (this.player.invulnerable) {
+                    this.player.invulnerableTime -= deltaTime;
+                    if (this.player.invulnerableTime <= 0) {
+                        this.player.invulnerable = false;
+                    }
+                }
+            }
+
+            updateBackground() {
+                this.backgrounds.forEach(bg => {
+                    bg.y += bg.speed * this.scale;
+                    if (bg.y > this.canvas.height) {
+                        bg.y = -bg.height;
+                        bg.x = Math.random() * this.canvas.width;
+                    }
+                });
+            }
+
+            updateObstacles() {
+                for (let i = this.obstacles.length - 1; i >= 0; i--) {
+                    const obstacle = this.obstacles[i];
+                    obstacle.y += this.speed * this.scale;
+                    
+                    if (obstacle.y > this.canvas.height) {
+                        this.obstacles.splice(i, 1);
+                    }
+                }
+            }
+
+            updateCoins() {
+                for (let i = this.coins.length - 1; i >= 0; i--) {
+                    const coin = this.coins[i];
+                    coin.y += this.speed * this.scale;
+                    
+                    // 磁铁效果
+                    if (this.activePowerUps.magnet) {
+                        const dx = this.player.x - coin.x;
+                        const dy = this.player.y - coin.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 150 * this.scale) {
+                            coin.x += dx * 0.1;
+                            coin.y += dy * 0.1;
+                        }
+                    }
+                    
+                    if (coin.y > this.canvas.height) {
+                        this.coins.splice(i, 1);
+                    }
+                }
+            }
+
+            updatePowerUps() {
+                for (let i = this.powerUps.length - 1; i >= 0; i--) {
+                    const powerUp = this.powerUps[i];
+                    powerUp.y += this.speed * this.scale;
+                    
+                    if (powerUp.y > this.canvas.height) {
+                        this.powerUps.splice(i, 1);
+                    }
+                }
+            }
+
+            updateParticles(deltaTime) {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const particle = this.particles[i];
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.vy += 0.3;
+                    particle.life -= deltaTime / 1000;
+                    particle.size *= 0.98;
+                    
+                    if (particle.life <= 0 || particle.size < 0.5) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+
+            updatePowerUpTimers(deltaTime) {
+                Object.keys(this.powerUpTimers).forEach(type => {
+                    if (this.powerUpTimers[type] > 0) {
+                        this.powerUpTimers[type] -= deltaTime;
+                        if (this.powerUpTimers[type] <= 0) {
+                            this.activePowerUps[type] = false;
+                            this.updatePowerUpUI();
+                        }
+                    }
+                });
+            }
+
+            checkCollisions() {
+                // 检查障碍物碰撞
+                if (!this.player.invulnerable && !this.activePowerUps.shield) {
+                    for (const obstacle of this.obstacles) {
+                        if (this.player.lane === obstacle.lane &&
+                            this.checkCollision(this.player, obstacle)) {
+                            this.takeDamage();
+                            break;
+                        }
+                    }
+                }
+                
+                // 检查金币碰撞
+                for (let i = this.coins.length - 1; i >= 0; i--) {
+                    const coin = this.coins[i];
+                    if (this.checkCollision(this.player, coin)) {
+                        this.coins.splice(i, 1);
+                        const coinValue = this.activePowerUps.doubleCoin ? 2 : 1;
+                        this.coins += coinValue;
+                        this.score += 50;
+                        this.createParticles(coin.x, coin.y, 'coin');
+                    }
+                }
+                
+                // 检查道具碰撞
+                for (let i = this.powerUps.length - 1; i >= 0; i--) {
+                    const powerUp = this.powerUps[i];
+                    if (this.checkCollision(this.player, powerUp)) {
+                        this.powerUps.splice(i, 1);
+                        this.activatePowerUp(powerUp.type);
+                        this.createParticles(powerUp.x, powerUp.y, 'powerup');
+                    }
+                }
+            }
+
+            checkCollision(rect1, rect2) {
+                return rect1.x < rect2.x + rect2.width &&
+                       rect1.x + rect1.width > rect2.x &&
+                       rect1.y < rect2.y + rect2.height &&
+                       rect1.y + rect1.height > rect2.y;
+            }
+
+            takeDamage() {
+                this.player.lives--;
+                this.player.invulnerable = true;
+                this.player.invulnerableTime = 2000;
+                
+                this.updateHearts();
+                this.createParticles(this.player.x, this.player.y, 'damage');
+                
+                if (this.player.lives <= 0) {
+                    this.gameOver();
+                }
+            }
+
+            activatePowerUp(type) {
+                this.activePowerUps[type] = true;
+                this.powerUpTimers[type] = 8000; // 8秒持续时间
+                this.updatePowerUpUI();
+                
+                // 特殊效果
+                if (type === 'sprint') {
+                    this.speed = this.maxSpeed;
+                    setTimeout(() => {
+                        this.speed = this.baseSpeed;
+                    }, 8000);
+                }
+            }
+
+            updatePowerUpUI() {
+                const slots = ['powerUpSlot1', 'powerUpSlot2'];
+                let slotIndex = 0;
+                
+                Object.keys(this.activePowerUps).forEach(type => {
+                    if (this.activePowerUps[type] && slotIndex < 2) {
+                        const slot = document.getElementById(slots[slotIndex]);
+                        slot.textContent = this.getPowerUpIcon(type);
+                        slot.classList.add('active');
+                        slotIndex++;
+                    }
+                });
+                
+                // 清空未使用的槽位
+                for (let i = slotIndex; i < 2; i++) {
+                    const slot = document.getElementById(slots[i]);
+                    slot.textContent = '';
+                    slot.classList.remove('active');
+                }
+            }
+
+            gameOver() {
+                this.gameState = 'gameOver';
+                this.ui.gameOver.style.display = 'block';
+                this.ui.finalScore.textContent = this.score;
+                this.ui.finalCoins.textContent = this.coinCount;
+            }
+
+            restart() {
+                this.ui.gameOver.style.display = 'none';
+                this.initGame();
+            }
+
+            togglePause() {
+                if (this.gameState === 'playing') {
+                    this.gameState = 'paused';
+                    document.getElementById('pauseBtn').textContent = '▶';
+                } else if (this.gameState === 'paused') {
+                    this.gameState = 'playing';
+                    document.getElementById('pauseBtn').textContent = '⏸';
+                }
+            }
+
+            updateUI() {
+                this.ui.score.textContent = this.score;
+                this.ui.coins.textContent = this.coins;
+            }
+
+            updateHearts() {
+                this.ui.hearts.innerHTML = '';
+                for (let i = 0; i < this.player.lives; i++) {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart';
+                    this.ui.hearts.appendChild(heart);
+                }
+            }
+
+            render() {
+                // 清空画布
+                this.ctx.fillStyle = 'linear-gradient(to bottom, #87CEEB, #98FB98)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制背景
+                this.renderBackground();
+                
+                // 绘制跑道
+                this.renderLanes();
+                
+                // 绘制游戏对象
+                this.renderObstacles();
+                this.renderCoins();
+                this.renderPowerUps();
+                this.renderPlayer();
+                this.renderParticles();
+                
+                // 绘制特效
+                if (this.player.invulnerable) {
+                    this.renderInvulnerableEffect();
+                }
+                
+                if (this.activePowerUps.shield) {
+                    this.renderShieldEffect();
+                }
+                
+                if (this.activePowerUps.magnet) {
+                    this.renderMagnetEffect();
+                }
+            }
+
+            renderBackground() {
+                // 天空渐变
+                const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+                gradient.addColorStop(0, '#87CEEB');
+                gradient.addColorStop(1, '#98FB98');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制背景元素
+                this.backgrounds.forEach(bg => {
+                    this.ctx.save();
+                    this.ctx.globalAlpha = 0.3;
+                    this.ctx.fillStyle = bg.type === 'building' ? '#666' : '#fff';
+                    
+                    if (bg.type === 'building') {
+                        this.ctx.fillRect(bg.x, bg.y, bg.width, bg.height);
+                    } else {
+                        this.ctx.beginPath();
+                        this.ctx.arc(bg.x, bg.y, bg.width / 2, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                    
+                    this.ctx.restore();
+                });
+            }
+
+            renderLanes() {
+                // 绘制跑道线
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                this.ctx.lineWidth = 2 * this.scale;
+                this.ctx.setLineDash([20 * this.scale, 10 * this.scale]);
+                
+                for (let i = 0; i < 2; i++) {
+                    const x = this.lanes[i] + (this.lanes[i + 1] - this.lanes[i]) / 2;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                }
+                
+                this.ctx.setLineDash([]);
+                
+                // 绘制地面
+                this.ctx.fillStyle = 'rgba(139, 69, 19, 0.3)';
+                this.ctx.fillRect(0, this.canvas.height - 100 * this.scale, this.canvas.width, 100 * this.scale);
+            }
+
+            renderPlayer() {
+                this.ctx.save();
+                
+                // 无敌闪烁效果
+                if (this.player.invulnerable && Math.floor(Date.now() / 100) % 2) {
+                    this.ctx.globalAlpha = 0.5;
+                }
+                
+                // 绘制玩家
+                this.ctx.fillStyle = '#4CAF50';
+                this.ctx.fillRect(
+                    this.player.x - this.player.width / 2,
+                    this.player.y,
+                    this.player.width,
+                    this.player.height
+                );
+                
+                // 绘制眼睛
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(
+                    this.player.x - this.player.width / 2 + 5 * this.scale,
+                    this.player.y + 10 * this.scale,
+                    8 * this.scale,
+                    8 * this.scale
+                );
+                this.ctx.fillRect(
+                    this.player.x + this.player.width / 2 - 13 * this.scale,
+                    this.player.y + 10 * this.scale,
+                    8 * this.scale,
+                    8 * this.scale
+                );
+                
+                this.ctx.restore();
+            }
+
+            renderObstacles() {
+                this.obstacles.forEach(obstacle => {
+                    this.ctx.fillStyle = obstacle.color;
+                    this.ctx.fillRect(
+                        obstacle.x - obstacle.width / 2,
+                        obstacle.y,
+                        rgba(255,255,255,obstacle.alpha/*-0.5*/)
+                    );
+                    
+                    
+                });
+            }
+
+            jump() {
+                if (!this.player.isJumping && !this.player.isSliding) {
+                    this.player.velocityY = -15 * this.scale;
+                    this.player.isJumping = true;
+                    
+                    // 跳跃粒子效果
+                    this.createParticles(
+                        this.player.x,
+                        this.player.y + this.player.height,
+                        5,
+                        '#FFD700'
+                    );
+                }
+            }
+
+            slide() {
+                if (!this.player.isJumping && !this.player.isSliding) {
+                    this.player.isSliding = true;
+                    this.player.height = 30 * this.scale;
+                    
+                    // 滑行粒子效果
+                    this.createParticles(
+                        this.player.x,
+                        this.player.y + this.player.height,
+                        3,
+                        '#FF6B6B'
+                    );
+                    
+                    setTimeout(() => {
+                        this.player.isSliding = false;
+                        this.player.height = 60 * this.scale;
+                    }, 500);
+                }
+            }
+
+            switchLane(direction) {
+                const newLane = this.player.lane + direction;
+                if (newLane >= 0 && newLane <= 2) {
+                    this.player.lane = newLane;
+                    this.player.x = this.lanes[newLane];
+                    
+                    // 切换跑道粒子效果
+                    this.createParticles(
+                        this.player.x,
+                        this.player.y + this.player.height / 2,
+                        3,
+                        '#4ECDC4'
+                    );
+                }
+            }
+
+            spawnObstacle() {
+                const types = ['upper', 'lower', 'full'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const lane = Math.floor(Math.random() * 3);
+                
+                let obstacle = {
+                    x: this.lanes[lane],
+                    y: -100,
+                    width: 50 * this.scale,
+                    height: 50 * this.scale,
+                    type: type,
+                    lane: lane,
+                    color: this.getObstacleColor(type)
+                };
+                
+                switch(type) {
+                    case 'upper':
+                        obstacle.y = this.canvas.height * 0.3;
+                        break;
+                    case 'lower':
+                        obstacle.y = this.canvas.height - 150;
+                        break;
+                    case 'full':
+                        obstacle.height = this.canvas.height * 0.6;
+                        obstacle.y = this.canvas.height * 0.2;
+                        break;
+                }
+                
+                this.obstacles.push(obstacle);
+            }
+
+            getObstacleColor(type) {
+                switch(type) {
+                    case 'upper': return '#FF6B6B';
+                    case 'lower': return '#4ECDC4';
+                    case 'full': return '#45B7D1';
+                    default: return '#FF6B6B';
+                }
+            }
+
+            spawnCoin() {
+                const lane = Math.floor(Math.random() * 3);
+                const pattern = Math.floor(Math.random() * 3);
+                
+                // 生成不同的金币排列模式
+                switch(pattern) {
+                    case 0: // 单个金币
+                        this.coins.push({
+                            x: this.lanes[lane],
+                            y: -50,
+                            width: 30 * this.scale,
+                            height: 30 * this.scale,
+                            value: 1,
+                            type: 'single'
+                        });
+                        break;
+                    case 1: // 垂直排列
+                        for (let i = 0; i < 3; i++) {
+                            this.coins.push({
+                                x: this.lanes[lane],
+                                y: -50 - (i * 50),
+                                width: 30 * this.scale,
+                                height: 30 * this.scale,
+                                value: 1,
+                                type: 'line'
+                            });
+                        }
+                        break;
+                    case 2: // 水平排列
+                        for (let i = 0; i < 3; i++) {
+                            this.coins.push({
+                                x: this.lanes[i],
+                                y: -50,
+                                width: 30 * this.scale,
+                                height: 30 * this.scale,
+                                value: 1,
+                                type: 'row'
+                            });
+                        }
+                        break;
+                }
+            }
+
+            spawnPowerUp() {
+                const types = ['magnet', 'shield', 'doubleCoin', 'sprint'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const lane = Math.floor(Math.random() * 3);
+                
+                this.powerUps.push({
+                    x: this.lanes[lane],
+                    y: -50,
+                    width: 40 * this.scale,
+                    height: 40 * this.scale,
+                    type: type,
+                    color: this.getPowerUpColor(type)
+                });
+            }
+
+            getPowerUpColor(type) {
+                switch(type) {
+                    case 'magnet': return '#9C27B0';
+                    case 'shield': return '#2196F3';
+                    case 'doubleCoin': return '#FFC107';
+                    case 'sprint': return '#FF5722';
+                    default: return '#9C27B0';
+                }
+            }
+
+            createParticles(x, y, count, color) {
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: (Math.random() - 0.5) * 10 * this.scale,
+                        vy: (Math.random() - 0.5) * 10 * this.scale,
+                        life: 30,
+                        maxLife: 30,
+                        color: color,
+                        size: Math.random() * 5 * this.scale + 2 * this.scale
+                    });
+                }
+            }
+
+            updateParticles() {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const particle = this.particles[i];
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.vy += 0.5 * this.scale;
+                    particle.life--;
+                    
+                    if (particle.life <= 0) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+
+            updatePlayer() {
+                // 重力
+                if (this.player.isJumping) {
+                    this.player.velocityY += 0.8 * this.scale;
+                    this.player.y += this.player.velocityY;
+                    
+                    // 着陆检测
+                    if (this.player.y >= this.canvas.height - 150) {
+                        this.player.y = this.canvas.height - 150;
+                        this.player.isJumping = false;
+                        this.player.velocityY = 0;
+                    }
+                }
+                
+                // 无敌时间递减
+                if (this.player.invulnerable) {
+                    this.player.invulnerableTime--;
+                    if (this.player.invulnerableTime <= 0) {
+                        this.player.invulnerable = false;
+                    }
+                }
+                
+                // 磁铁效果
+                if (this.activePowerUps.magnet) {
+                    this.attractCoins();
+                }
+                
+                // 冲刺效果
+                if (this.activePowerUps.sprint) {
+                    this.speed = Math.min(this.maxSpeed * 1.5, this.baseSpeed + 10);
+                } else {
+                    this.speed = Math.min(this.maxSpeed, this.baseSpeed + this.score * this.speedIncrement);
+                }
+            }
+
+            attractCoins() {
+                const magnetRange = 150 * this.scale;
+                
+                this.coins.forEach(coin => {
+                    const dx = this.player.x - coin.x;
+                    const dy = this.player.y - coin.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < magnetRange) {
+                        const attraction = 8 * this.scale;
+                        coin.x += (dx / distance) * attraction;
+						                        coin.y += (dy / distance) * attraction;
+                    }
+                });
+            }
+
+            updateObstacles() {
+                for (let i = this.obstacles.length - 1; i >= 0; i--) {
+                    const obstacle = this.obstacles[i];
+                    obstacle.y += this.speed * this.scale;
+                    
+                    if (obstacle.y > this.canvas.height) {
+                        this.obstacles.splice(i, 1);
+                    }
+                }
+            }
+
+            updateCoins() {
+                for (let i = this.coins.length - 1; i >= 0; i--) {
+                    const coin = this.coins[i];
+                    coin.y += this.speed * this.scale;
+                    coin.rotation = (coin.rotation + 0.1) % (Math.PI * 2);
+                    
+                    if (coin.y > this.canvas.height) {
+                        this.coins.splice(i, 1);
+                    }
+                }
+            }
+
+            updatePowerUps() {
+                for (let i = this.powerUps.length - 1; i >= 0; i--) {
+                    const powerUp = this.powerUps[i];
+                    powerUp.y += this.speed * this.scale;
+                    
+                    if (powerUp.y > this.canvas.height) {
+                        this.powerUps.splice(i, 1);
+                    }
+                }
+            }
+
+            updatePowerUpTimers(deltaTime) {
+                Object.keys(this.powerUpTimers).forEach(type => {
+                    if (this.powerUpTimers[type] > 0) {
+                        this.powerUpTimers[type] -= deltaTime;
+                        if (this.powerUpTimers[type] <= 0) {
+                            this.activePowerUps[type] = false;
+                            this.updatePowerUpUI();
+                        }
+                    }
+                });
+            }
+
+            checkCollisions() {
+                // 检查障碍物碰撞
+                if (!this.player.invulnerable && !this.activePowerUps.shield) {
+                    for (const obstacle of this.obstacles) {
+                        if (this.player.lane === obstacle.lane) {
+                            const playerRect = {
+                                x: this.player.x - this.player.width / 2,
+                                y: this.player.y,
+                                width: this.player.width,
+                                height: this.player.height
+                            };
+                            
+                            if (this.checkCollision(playerRect, obstacle)) {
+                                this.takeDamage();
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // 检查金币碰撞
+                for (let i = this.coins.length - 1; i >= 0; i--) {
+                    const coin = this.coins[i];
+                    const playerRect = {
+                        x: this.player.x - this.player.width / 2,
+                        y: this.player.y,
+                        width: this.player.width,
+                        height: this.player.height
+                    };
+                    
+                    if (this.checkCollision(playerRect, coin)) {
+                        const coinValue = this.activePowerUps.doubleCoin ? 2 : 1;
+						console.log(this.coins);
+                        this.coinCount += coinValue;
+                        this.score += 100;
+                        this.createParticles(coin.x, coin.y, 8, '#FFD700');
+						console.log(this.coins);
+                        this.coins.splice(i, 1);
+                    }
+                }
+                
+                // 检查道具碰撞
+                for (let i = this.powerUps.length - 1; i >= 0; i--) {
+                    const powerUp = this.powerUps[i];
+                    const playerRect = {
+                        x: this.player.x - this.player.width / 2,
+                        y: this.player.y,
+                        width: this.player.width,
+                        height: this.player.height
+                    };
+                    
+                    if (this.checkCollision(playerRect, powerUp)) {
+                        this.activatePowerUp(powerUp.type);
+                        this.createParticles(powerUp.x, powerUp.y, 10, powerUp.color);
+                        this.powerUps.splice(i, 1);
+                    }
+                }
+            }
+
+            checkCollision(rect1, rect2) {
+                return rect1.x < rect2.x + rect2.width &&
+                       rect1.x + rect1.width > rect2.x &&
+                       rect1.y < rect2.y + rect2.height &&
+                       rect1.y + rect1.height > rect2.y;
+            }
+
+            takeDamage() {
+                this.player.lives--;
+                this.player.invulnerable = true;
+                this.player.invulnerableTime = 120; // 2秒无敌
+                
+                this.updateHearts();
+                this.createParticles(this.player.x, this.player.y, 12, '#FF6B6B');
+                
+                if (this.player.lives <= 0) {
+                    this.gameOver();
+                }
+            }
+
+            activatePowerUp(type) {
+                this.activePowerUps[type] = true;
+                this.powerUpTimers[type] = 8000; // 8秒持续时间
+                this.updatePowerUpUI();
+                
+                // 特殊效果
+                switch(type) {
+                    case 'sprint':
+                        this.speed = this.maxSpeed * 1.5;
+                        setTimeout(() => {
+                            this.speed = this.baseSpeed;
+                        }, 8000);
+                        break;
+                    case 'shield':
+                        this.player.invulnerable = true;
+                        this.player.invulnerableTime = 8000;
+                        break;
+                }
+            }
+
+            updatePowerUpUI() {
+                const slots = ['powerUpSlot1', 'powerUpSlot2'];
+                let slotIndex = 0;
+                
+                Object.keys(this.activePowerUps).forEach(type => {
+                    if (this.activePowerUps[type] && slotIndex < 2) {
+                        const slot = document.getElementById(slots[slotIndex]);
+                        slot.textContent = this.getPowerUpIcon(type);
+                        slot.classList.add('active');
+                        slotIndex++;
+                    }
+                });
+                
+                // 清空未使用的槽位
+                for (let i = slotIndex; i < 2; i++) {
+                    const slot = document.getElementById(slots[i]);
+                    slot.textContent = '';
+                    slot.classList.remove('active');
+                }
+            }
+
+            gameOver() {
+                this.gameState = 'gameOver';
+                this.ui.gameOver.style.display = 'block';
+                this.ui.finalScore.textContent = this.score;
+                this.ui.finalCoins.textContent = this.coinCount;
+            }
+
+            render() {
+                // 清空画布
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制背景
+                this.renderBackground();
+                
+                // 绘制跑道
+                this.renderLanes();
+                
+                // 绘制游戏对象
+                this.renderObstacles();
+                this.renderCoins();
+                this.renderPowerUps();
+                this.renderPlayer();
+                this.renderParticles();
+                
+                // 绘制特效
+                if (this.player.invulnerable) {
+                    this.renderInvulnerableEffect();
+                }
+                
+                if (this.activePowerUps.shield) {
+                    this.renderShieldEffect();
+                }
+                
+                if (this.activePowerUps.magnet) {
+                    this.renderMagnetEffect();
+                }
+                
+                if (this.activePowerUps.sprint) {
+                    this.renderSprintEffect();
+                }
+            }
+
+            renderBackground() {
+                // 天空渐变
+                const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+                gradient.addColorStop(0, '#87CEEB');
+                gradient.addColorStop(1, '#98FB98');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制背景元素
+                this.backgrounds.forEach(bg => {
+                    this.ctx.save();
+                    this.ctx.globalAlpha = 0.3;
+                    
+                    if (bg.type === 'building') {
+                        this.ctx.fillStyle = '#666';
+                        this.ctx.fillRect(bg.x, bg.y, bg.width, bg.height);
+                        
+                        // 窗户
+                        this.ctx.fillStyle = '#FFD700';
+                        for (let i = 0; i < 3; i++) {
+                            for (let j = 0; j < 5; j++) {
+                                if (Math.random() > 0.3) {
+                                    this.ctx.fillRect(
+                                        bg.x + 10 * this.scale + i * 25 * this.scale,
+                                        bg.y + 10 * this.scale + j * 20 * this.scale,
+                                        15 * this.scale,
+                                        15 * this.scale
+                                    );
+                                }
+                            }
+                        }
+                    } else {
+                        // 云朵
+                        this.ctx.fillStyle = '#fff';
+                        this.ctx.beginPath();
+                        this.ctx.arc(bg.x + 25 * this.scale, bg.y + 25 * this.scale, 25 * this.scale, 0, Math.PI * 2);
+                        this.ctx.arc(bg.x + 45 * this.scale, bg.y + 25 * this.scale, 35 * this.scale, 0, Math.PI * 2);
+                        this.ctx.arc(bg.x + 65 * this.scale, bg.y + 25 * this.scale, 25 * this.scale, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                    
+                    this.ctx.restore();
+                });
+            }
+
+            renderLanes() {
+                // 绘制跑道线
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                this.ctx.lineWidth = 2 * this.scale;
+                this.ctx.setLineDash([20 * this.scale, 10 * this.scale]);
+                
+                for (let i = 0; i < 2; i++) {
+                    const x = this.lanes[i] + (this.lanes[i + 1] - this.lanes[i]) / 2;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                }
+                
+                this.ctx.setLineDash([]);
+            }
+
+            renderObstacles() {
+                this.obstacles.forEach(obstacle => {
+                    this.ctx.fillStyle = obstacle.color;
+                    this.ctx.fillRect(
+                        obstacle.x - obstacle.width / 2,
+                        obstacle.y,
+                        obstacle.width,
+                        obstacle.height
+                    );
+                    
+                    // 添加警告标记
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.font = `${20 * this.scale}px Arial`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('!', obstacle.x, obstacle.y + obstacle.height / 2);
+                });
+            }
+
+            renderCoins() {
+                this.coins.forEach(coin => {
+                    this.ctx.save();
+                    this.ctx.translate(coin.x, coin.y);
+                    this.ctx.rotate(coin.rotation);
+                    
+                    // 金币外圈
+                    this.ctx.fillStyle = '#FFD700';
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, coin.width / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // 金币内圈
+                    this.ctx.fillStyle = '#FFA500';
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, coin.width / 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // 金币符号
+                    this.ctx.fillStyle = '#FFD700';
+                    this.ctx.font = `${coin.width}px Arial`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('$', 0, coin.width / 4);
+                    
+                    this.ctx.restore();
+                });
+            }
+
+            renderPowerUps() {
+                this.powerUps.forEach(powerUp => {
+                    this.ctx.save();
+                    this.ctx.translate(powerUp.x, powerUp.y);
+                    
+                    // 道具背景
+                    this.ctx.fillStyle = powerUp.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, powerUp.width / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // 道具图标
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.font = `${powerUp.width}px Arial`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(powerUp.icon, 0, powerUp.width / 4);
+                    
+                    // 旋转效果
+                    this.ctx.rotate(Date.now() / 1000);
+                    
+                    this.ctx.restore();
+                });
+            }
+
+            renderPlayer() {
+                this.ctx.save();
+                
+                // 无敌闪烁效果
+                if (this.player.invulnerable && Math.floor(Date.now() / 100) % 2) {
+                    this.ctx.globalAlpha = 0.5;
+                }
+                
+                // 玩家身体
+                this.ctx.fillStyle = '#4CAF50';
+                this.ctx.fillRect(
+                    this.player.x - this.player.width / 2,
+                    this.player.y,
+                    this.player.width,
+                    this.player.height
+                );
+                
+                // 玩家眼睛
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(
+                    this.player.x - this.player.width / 2 + 5 * this.scale,
+                    this.player.y + 10 * this.scale,
+                    8 * this.scale,
+                    8 * this.scale
+                );
+                this.ctx.fillRect(
+                    this.player.x + this.player.width / 2 - 13 * this.scale,
+                    this.player.y + 10 * this.scale,
+                    8 * this.scale,
+                    8 * this.scale
+                );
+                
+                // 玩家嘴巴
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(
+                    this.player.x - 5 * this.scale,
+                    this.player.y + 30 * this.scale,
+                    10 * this.scale,
+                    5 * this.scale
+                );
+                
+                this.ctx.restore();
+            }
+
+            renderParticles() {
+                this.particles.forEach(particle => {
+                    this.ctx.save();
+                    this.ctx.globalAlpha = particle.life;
+                    this.ctx.fillStyle = particle.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.restore();
+                });
+            }
+
+            renderInvulnerableEffect() {
+                this.ctx.save();
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                this.ctx.lineWidth = 2 * this.scale;
+                this.ctx.beginPath();
+                this.ctx.arc(
+                    this.player.x,
+                    this.player.y + this.player.height / 2,
+                    this.player.width,
+                    0,
+                    Math.PI * 2
+                );
+                this.ctx.stroke();
+                this.ctx.restore();
+            }
+
+            renderShieldEffect() {
+                this.ctx.save();
+                this.ctx.strokeStyle = 'rgba(33, 150, 243, 0.5)';
+                this.ctx.lineWidth = 3 * this.scale;
+                this.ctx.beginPath();
+                this.ctx.arc(
+                    this.player.x,
+                    this.player.y + this.player.height / 2,
+                    this.player.width + 5 * this.scale,
+                    0,
+                    Math.PI * 2
+                );
+                this.ctx.stroke();
+                this.ctx.restore();
+            }
+
+            renderMagnetEffect() {
+                this.ctx.save();
+                this.ctx.strokeStyle = 'rgba(156, 39, 176, 0.3)';
+                this.ctx.lineWidth = 1 * this.scale;
+                this.ctx.beginPath();
+                this.ctx.arc(
+                    this.player.x,
+                    this.player.y + this.player.height / 2,
+                    150 * this.scale,
+                    0,
+                    Math.PI * 2
+                );
+                this.ctx.stroke();
+                this.ctx.restore();
+            }
+
+            renderSprintEffect() {
+                // 冲刺时的速度线
+                this.ctx.save();
+                this.ctx.strokeStyle = 'rgba(255, 87, 34, 0.5)';
+                this.ctx.lineWidth = 2 * this.scale;
+                
+                for (let i = 0; i < 10; i++) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(
+                        Math.random() * this.canvas.width,
+                        Math.random() * this.canvas.height
+                    );
+                    this.ctx.lineTo(
+                        Math.random() * this.canvas.width,
+                        Math.random() * this.canvas.height
+                    );
+                    this.ctx.stroke();
+                }
+                
+                this.ctx.restore();
+            }
+
+            gameLoop() {
+                const currentTime = Date.now();
+                const deltaTime = currentTime - this.lastTime;
+                
+                if (deltaTime >= 1000 / 60) { // 60 FPS
+                    this.update(deltaTime);
+                    this.render();
+                    this.lastTime = currentTime;
+                }
+                
+                requestAnimationFrame(() => this.gameLoop());
+            }
+
+            start() {
+                this.lastTime = Date.now();
+                this.gameLoop();
+            }
+        }
+
+        // 初始化游戏
+        window.addEventListener('load', () => {
+            const game = new Game();
+            game.start();
+            
+            // 添加触摸支持
+            if ('ontouchstart' in window) {
+                document.getElementById('mobileControls').style.display = 'flex';
+            }
+        });
+
+        // 防止页面滚动
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        // 处理页面可见性变化
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // 页面隐藏时暂停游戏
+                if (window.game && window.game.gameState === 'playing') {
+                    window.game.togglePause();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+						
+						
+						
