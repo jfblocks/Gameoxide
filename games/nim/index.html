@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nim Game - 策略取石子游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #eaeaea;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            background: linear-gradient(45deg, #e94560, #ff6b6b, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+            letter-spacing: 2px;
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 20px rgba(233, 69, 96, 0.5)); }
+            to { filter: drop-shadow(0 0 30px rgba(254, 202, 87, 0.5)); }
+        }
+
+        .subtitle {
+            color: #a0a0a0;
+            margin-top: 10px;
+            font-size: 1.1rem;
+        }
+
+        .game-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .game-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .main-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            color: #feca57;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .setup-section {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #b0b0b0;
+            font-size: 0.95rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #e94560;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #e94560, #c73e54);
+            border-color: #ff6b6b;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+        }
+
+        .difficulty-section {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .difficulty-section.visible {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slider-container {
+            margin-top: 10px;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #feca57, #ff9f43);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(254, 202, 87, 0.5);
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .difficulty-value {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 1.1rem;
+            color: #feca57;
+            font-weight: bold;
+        }
+
+        .start-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #00d9ff, #00a8e8);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 30px rgba(0, 217, 255, 0.5);
+        }
+
+        .start-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .game-board {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .game-board.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border-left: 4px solid #e94560;
+        }
+
+        .current-player {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .current-player.player1 { color: #00d9ff; }
+        .current-player.player2 { color: #feca57; }
+        .current-player.ai { color: #ff6b6b; }
+
+        .nim-sum {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+        }
+
+        .nim-sum.winning { color: #00d9ff; }
+        .nim-sum.losing { color: #e94560; }
+
+        .piles-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .pile {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 150px;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .pile:hover {
+            border-color: rgba(233, 69, 96, 0.5);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .pile.selected {
+            border-color: #e94560;
+            background: rgba(233, 69, 96, 0.1);
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+        }
+
+        .pile-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #feca57;
+            margin-bottom: 10px;
+        }
+
+        .pile-label {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .pile-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .take-btn {
+            padding: 8px 15px;
+            background: linear-gradient(135deg, #e94560, #c73e54);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            opacity: 0.9;
+        }
+
+        .take-btn:hover {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        .take-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+            opacity: 0.5;
+            transform: none;
+        }
+
+        .custom-take {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .custom-take input {
+            width: 60px;
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: #fff;
+            text-align: center;
+        }
+
+        .custom-take button {
+            padding: 5px 10px;
+            background: #00d9ff;
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .stones-visual {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            margin: 15px 0;
+            min-height: 60px;
+            align-content: center;
+        }
+
+        .stone {
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle at 30% 30%, #ff9f43, #e94560);
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            animation: dropIn 0.3s ease;
+        }
+
+        @keyframes dropIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .history-log {
+            max-height: 400px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .history-log::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .history-log::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+
+        .history-log::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .history-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #00d9ff;
+            font-size: 0.9rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .history-item.ai-move {
+            border-left-color: #ff6b6b;
+        }
+
+        .history-item.win {
+            border-left-color: #feca57;
+            background: rgba(254, 202, 87, 0.1);
+            font-weight: bold;
+        }
+
+        .move-time {
+            color: #666;
+            font-size: 0.8rem;
+            margin-right: 8px;
+        }
+
+        .winner-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .winner-modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .winner-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid #e94560;
+            box-shadow: 0 0 50px rgba(233, 69, 96, 0.5);
+            animation: popIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .winner-text {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #feca57, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .winner-subtext {
+            color: #a0a0a0;
+            margin-bottom: 30px;
+        }
+
+        .play-again-btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #00d9ff, #00a8e8);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .play-again-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
+        }
+
+        .ai-thinking {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #ff6b6b;
+            font-style: italic;
+        }
+
+        .ai-thinking.active {
+            display: block;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .rules-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(254, 202, 87, 0.1);
+            border-radius: 10px;
+            border-left: 3px solid #feca57;
+        }
+
+        .rules-title {
+            color: #feca57;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .rules-list {
+            list-style: none;
+            font-size: 0.9rem;
+            color: #b0b0b0;
+        }
+
+        .rules-list li {
+            margin-bottom: 5px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .rules-list li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #feca57;
+        }
+
+        .binary-display {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+
+        .reset-btn:hover {
+            background: rgba(233, 69, 96, 0.2);
+            border-color: #e94560;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NIM GAME</h1>
+            <p class="subtitle">策略与博弈的完美融合</p>
+        </header>
+
+        <div class="game-layout">
+            <div class="main-panel">
+                <!-- Setup Section -->
+                <div id="setupSection" class="setup-section">
+                    <div class="input-group">
+                        <label for="pileInput">初始石子堆（用逗号分隔，如：3,5,7）</label>
+                        <input type="text" id="pileInput" placeholder="3,5,7" value="3,5,7">
+                    </div>
+
+                    <label>选择游戏模式</label>
+                    <div class="mode-selector">
+                        <button class="mode-btn active" data-mode="pvp">👥 双人对战</button>
+                        <button class="mode-btn" data-mode="pve-human">🤖 人机对战（人先）</button>
+                        <button class="mode-btn" data-mode="pve-ai">🤖 人机对战（机器先）</button>
+                    </div>
+
+                    <div id="difficultySection" class="difficulty-section">
+                        <label>AI难度</label>
+                        <div class="slider-container">
+                            <div class="slider-labels">
+                                <span>新手</span>
+                                <span>中等</span>
+                                <span>大师</span>
+                            </div>
+                            <input type="range" id="difficultySlider" min="0" max="100" value="100">
+                            <div class="difficulty-value" id="difficultyValue">100%</div>
+                        </div>
+                    </div>
+
+                    <button class="start-btn" id="startBtn">开始游戏</button>
+
+                    <div class="rules-section">
+                        <div class="rules-title">游戏规则</div>
+                        <ul class="rules-list">
+                            <li>玩家轮流从一堆中取走任意数量石子（至少取1个）</li>
+                            <li>取走最后一个石子的人获胜</li>
+                            <!-- <li>必胜策略：使各堆数量的异或和（Nim和）为0</li> -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Game Board -->
+                <div id="gameBoard" class="game-board">
+                    <div class="status-bar">
+                        <div id="currentPlayer" class="current-player player1">玩家 1 的回合</div>
+                        <!-- <div id="nimSum" class="nim-sum">Nim和: 0</div> -->
+                    </div>
+
+                    <div id="aiThinking" class="ai-thinking">AI正在思考...</div>
+
+                    <div id="pilesContainer" class="piles-container">
+                        <!-- Piles will be generated here -->
+                    </div>
+
+                    <button class="reset-btn" id="resetBtn">重新开始</button>
+                </div>
+            </div>
+
+            <div class="side-panel">
+                <div class="panel">
+                    <div class="panel-title">📜 操作历史</div>
+                    <div id="historyLog" class="history-log">
+                        <div style="color: #666; text-align: center; padding: 20px;">
+                            游戏尚未开始...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-title">📊 当前状态</div>
+                    <div id="gameStats" style="color: #888; font-size: 0.9rem;">
+                        <p>模式: <span id="statsMode">-</span></p>
+                        <p>回合数: <span id="statsTurns">0</span></p>
+                        <p>剩余石子: <span id="statsStones">0</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Winner Modal -->
+    <div id="winnerModal" class="winner-modal">
+        <div class="winner-content">
+            <div class="winner-text" id="winnerText">玩家 1 获胜！</div>
+            <div class="winner-subtext" id="winnerSubtext">完美的策略执行</div>
+            <button class="play-again-btn" id="playAgainBtn">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        class NimGame {
+            constructor() {
+                this.piles = [];
+                this.currentPlayer = 1; // 1 or 2
+                this.mode = 'pvp'; // pvp, pve-human, pve-ai
+                this.difficulty = 100; // AI perfect play percentage
+                this.history = [];
+                this.turnCount = 0;
+                this.gameOver = false;
+                this.isAIThinking = false;
+
+                this.initElements();
+                this.bindEvents();
+            }
+
+            initElements() {
+                this.setupSection = document.getElementById('setupSection');
+                this.gameBoard = document.getElementById('gameBoard');
+                this.pileInput = document.getElementById('pileInput');
+                this.startBtn = document.getElementById('startBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.pilesContainer = document.getElementById('pilesContainer');
+                this.currentPlayerEl = document.getElementById('currentPlayer');
+                this.nimSumEl = document.getElementById('nimSum');
+                this.historyLog = document.getElementById('historyLog');
+                this.aiThinkingEl = document.getElementById('aiThinking');
+                this.winnerModal = document.getElementById('winnerModal');
+                this.winnerText = document.getElementById('winnerText');
+                this.winnerSubtext = document.getElementById('winnerSubtext');
+                this.playAgainBtn = document.getElementById('playAgainBtn');
+                this.difficultySection = document.getElementById('difficultySection');
+                this.difficultySlider = document.getElementById('difficultySlider');
+                this.difficultyValue = document.getElementById('difficultyValue');
+                this.statsMode = document.getElementById('statsMode');
+                this.statsTurns = document.getElementById('statsTurns');
+                this.statsStones = document.getElementById('statsStones');
+            }
+
+            bindEvents() {
+                // Mode selection
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.mode = e.target.dataset.mode;
+                        
+                        // Show/hide difficulty slider
+                        if (this.mode.startsWith('pve')) {
+                            this.difficultySection.classList.add('visible');
+                        } else {
+                            this.difficultySection.classList.remove('visible');
+                        }
+                    });
+                });
+
+                // Difficulty slider
+                this.difficultySlider.addEventListener('input', (e) => {
+                    this.difficulty = parseInt(e.target.value);
+                    this.difficultyValue.textContent = this.difficulty + '%';
+                });
+
+                // Start game
+                this.startBtn.addEventListener('click', () => this.startGame());
+
+                // Reset
+                this.resetBtn.addEventListener('click', () => this.resetGame());
+
+                // Play again
+                this.playAgainBtn.addEventListener('click', () => {
+                    this.winnerModal.classList.remove('active');
+                    this.resetGame();
+                });
+
+                // Enter key to start
+                this.pileInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.startGame();
+                });
+            }
+
+            startGame() {
+                const input = this.pileInput.value.trim();
+                if (!input) {
+                    alert('请输入初始石子数量！');
+                    return;
+                }
+
+                // Parse piles
+                this.piles = input.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+                
+                if (this.piles.length === 0) {
+                    alert('请输入有效的数字！');
+                    return;
+                }
+
+                if (this.piles.some(n => n > 50)) {
+                    alert('每堆石子数量不能超过50！');
+                    return;
+                }
+
+                this.currentPlayer = 1;
+                this.history = [];
+                this.turnCount = 0;
+                this.gameOver = false;
+                this.isAIThinking = false;
+
+                // Update stats
+                this.statsMode.textContent = this.getModeText();
+                this.updateStats();
+
+                // Switch views
+                this.setupSection.style.display = 'none';
+                this.gameBoard.classList.add('active');
+                this.historyLog.innerHTML = '';
+
+                this.renderPiles();
+                this.updateStatus();
+
+                // If AI starts first
+                if (this.mode === 'pve-ai') {
+                    this.currentPlayer = 2; // AI is player 2
+                    setTimeout(() => this.makeAIMove(), 1000);
+                }
+
+                this.addToHistory('游戏开始', `初始局面: [${this.piles.join(', ')}]`);
+            }
+
+            getModeText() {
+                const texts = {
+                    'pvp': '双人对战',
+                    'pve-human': '人机对战（人先）',
+                    'pve-ai': '人机对战（AI先）'
+                };
+                return texts[this.mode] || this.mode;
+            }
+
+            resetGame() {
+                this.setupSection.style.display = 'block';
+                this.gameBoard.classList.remove('active');
+                this.winnerModal.classList.remove('active');
+            }
+
+            calculateNimSum() {
+                return this.piles.reduce((acc, val) => acc ^ val, 0);
+            }
+
+            renderPiles() {
+                this.pilesContainer.innerHTML = '';
+                
+                this.piles.forEach((count, index) => {
+                    const pileEl = document.createElement('div');
+                    pileEl.className = 'pile';
+                    pileEl.dataset.index = index;
+
+                    // Visual stones
+                    const stonesVisual = document.createElement('div');
+                    stonesVisual.className = 'stones-visual';
+                    const displayCount = Math.min(count, 20); // Max 20 visual stones
+                    for (let i = 0; i < displayCount; i++) {
+                        const stone = document.createElement('div');
+                        stone.className = 'stone';
+                        stone.style.animationDelay = (i * 0.02) + 's';
+                        stonesVisual.appendChild(stone);
+                    }
+                    if (count > 20) {
+                        const more = document.createElement('div');
+                        more.style.color = '#666';
+                        more.style.fontSize = '0.8rem';
+                        more.textContent = `+${count - 20} 更多`;
+                        stonesVisual.appendChild(more);
+                    }
+
+                    const numberEl = document.createElement('div');
+                    numberEl.className = 'pile-number';
+                    numberEl.textContent = count;
+
+                    const labelEl = document.createElement('div');
+                    labelEl.className = 'pile-label';
+                    labelEl.textContent = `第 ${index + 1} 堆`;
+
+                    const binaryEl = document.createElement('div');
+                    binaryEl.className = 'binary-display';
+                    binaryEl.textContent = count.toString(2).padStart(4, '0');
+
+                    const controlsEl = document.createElement('div');
+                    controlsEl.className = 'pile-controls';
+
+                    // Quick take buttons
+                    [1, 2, 3].forEach(n => {
+                        if (n <= count) {
+                            const btn = document.createElement('button');
+                            btn.className = 'take-btn';
+                            btn.textContent = `取 ${n} 个`;
+                            btn.onclick = () => this.makeMove(index, n);
+                            controlsEl.appendChild(btn);
+                        }
+                    });
+
+                    // Custom take
+                    if (count > 3) {
+                        const customDiv = document.createElement('div');
+                        customDiv.className = 'custom-take';
+                        
+                        const input = document.createElement('input');
+                        input.type = 'number';
+                        input.min = 1;
+                        input.max = count;
+                        input.value = Math.min(4, count);
+                        input.id = `custom-${index}`;
+                        
+                        const btn = document.createElement('button');
+                        btn.textContent = '取';
+                        btn.onclick = () => {
+                            const val = parseInt(input.value);
+                            if (val >= 1 && val <= count) {
+                                this.makeMove(index, val);
+                            }
+                        };
+
+                        customDiv.appendChild(input);
+                        customDiv.appendChild(btn);
+                        controlsEl.appendChild(customDiv);
+                    }
+
+                    pileEl.appendChild(stonesVisual);
+                    pileEl.appendChild(numberEl);
+                    pileEl.appendChild(labelEl);
+                    pileEl.appendChild(binaryEl);
+                    pileEl.appendChild(controlsEl);
+
+                    this.pilesContainer.appendChild(pileEl);
+                });
+            }
+
+            makeMove(pileIndex, count) {
+                if (this.gameOver || this.isAIThinking) return;
+                if (this.piles[pileIndex] < count) return;
+
+                // Execute move
+                const oldCount = this.piles[pileIndex];
+                this.piles[pileIndex] -= count;
+                this.turnCount++;
+
+                // Record history
+                const playerName = this.getPlayerName();
+                this.addToHistory(
+                    `${playerName} 操作`,
+                    `从第 ${pileIndex + 1} 堆取走 ${count} 个 (${oldCount} → ${this.piles[pileIndex]})`,
+                    this.isAICurrent()
+                );
+
+                // Check win
+                if (this.piles.every(p => p === 0)) {
+                    this.gameOver = true;
+                    this.renderPiles();
+                    this.updateStatus();
+                    setTimeout(() => this.showWinner(), 500);
+                    return;
+                }
+
+                // Switch player
+                this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                
+                this.renderPiles();
+                this.updateStatus();
+                this.updateStats();
+
+                // AI turn
+                if (!this.gameOver && this.isAICurrent()) {
+                    this.isAIThinking = true;
+                    this.aiThinkingEl.classList.add('active');
+                    setTimeout(() => this.makeAIMove(), 1500);
+                }
+            }
+
+            isAICurrent() {
+                return this.mode.startsWith('pve') && (
+                    (this.mode === 'pve-human' && this.currentPlayer === 2) ||
+                    (this.mode === 'pve-ai' && this.currentPlayer === 2)
+                );
+            }
+
+            getPlayerName() {
+                if (this.mode.startsWith('pve') && this.currentPlayer === 2) {
+                    return 'AI';
+                }
+                return `玩家 ${this.currentPlayer}`;
+            }
+
+            makeAIMove() {
+                if (this.gameOver) return;
+
+                const move = this.findBestMove();
+                const pileIndex = move.pile;
+                const count = move.count;
+
+                this.isAIThinking = false;
+                this.aiThinkingEl.classList.remove('active');
+
+                this.makeMove(pileIndex, count);
+            }
+
+            findBestMove() {
+                const nimSum = this.calculateNimSum();
+                const validMoves = [];
+
+                // Collect all valid moves
+                for (let i = 0; i < this.piles.length; i++) {
+                    for (let j = 1; j <= this.piles[i]; j++) {
+                        validMoves.push({ pile: i, count: j });
+                    }
+                }
+
+                // Determine if AI should play perfectly based on difficulty
+                const playPerfect = Math.random() * 100 < this.difficulty;
+
+                if (playPerfect && nimSum !== 0) {
+                    // Find winning move
+                    for (let move of validMoves) {
+                        const newPiles = [...this.piles];
+                        newPiles[move.pile] -= move.count;
+                        const newNimSum = newPiles.reduce((acc, val) => acc ^ val, 0);
+                        
+                        if (newNimSum === 0) {
+                            return move; // Winning move found
+                        }
+                    }
+                }
+
+                // Random move (for lower difficulty or no winning move)
+                return validMoves[Math.floor(Math.random() * validMoves.length)];
+            }
+
+            updateStatus() {
+                const nimSum = this.calculateNimSum();
+                
+                // Update player display
+                let playerText, playerClass;
+                if (this.mode.startsWith('pve') && this.currentPlayer === 2) {
+                    playerText = 'AI 思考中...';
+                    playerClass = 'ai';
+                } else {
+                    playerText = `玩家 ${this.currentPlayer} 的回合`;
+                    playerClass = this.currentPlayer === 1 ? 'player1' : 'player2';
+                }
+                
+                this.currentPlayerEl.textContent = playerText;
+                this.currentPlayerEl.className = 'current-player ' + playerClass;
+
+                // Update Nim sum
+                //this.nimSumEl.textContent = `Nim和: ${nimSum} (${nimSum.toString(2).padStart(4, '0')}₂)`;
+                //this.nimSumEl.className = 'nim-sum ' + (nimSum === 0 ? 'losing' : 'winning');
+
+                // Highlight current player's piles if it's human's turn
+                if (!this.isAICurrent() && !this.gameOver) {
+                    document.querySelectorAll('.pile').forEach((el, idx) => {
+                        if (this.piles[idx] > 0) {
+                            el.style.borderColor = this.currentPlayer === 1 ? '#00d9ff' : '#feca57';
+                        }
+                    });
+                }
+            }
+
+            updateStats() {
+                this.statsTurns.textContent = this.turnCount;
+                this.statsStones.textContent = this.piles.reduce((a, b) => a + b, 0);
+            }
+
+            addToHistory(title, detail, isAI = false) {
+                const item = document.createElement('div');
+                item.className = 'history-item' + (isAI ? ' ai-move' : '');
+                
+                const time = new Date().toLocaleTimeString('zh-CN', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit' 
+                });
+                
+                item.innerHTML = `
+                    <span class="move-time">${time}</span>
+                    <strong>${title}</strong><br>
+                    <span style="color: #aaa;">${detail}</span>
+                `;
+                
+                this.historyLog.insertBefore(item, this.historyLog.firstChild);
+                
+                // Keep only last 50 items
+                while (this.historyLog.children.length > 50) {
+                    this.historyLog.removeChild(this.historyLog.lastChild);
+                }
+            }
+
+            showWinner() {
+                const winner = this.currentPlayer === 1 ? '玩家 1' : 
+                              (this.mode.startsWith('pve') ? 'AI' : '玩家 2');
+                
+                this.winnerText.textContent = `${winner} 获胜！`;
+                
+                if (this.mode.startsWith('pve') && this.currentPlayer === 2) {
+                    this.winnerSubtext.textContent = 'AI 展现了完美的策略';
+                } else if (this.mode.startsWith('pve') && this.currentPlayer === 1) {
+                    this.winnerSubtext.textContent = '恭喜你击败了AI！';
+                } else {
+                    this.winnerSubtext.textContent = '精彩的对决！';
+                }
+
+                this.addToHistory('🏆 游戏结束', `${winner} 获胜！`, this.currentPlayer === 2 && this.mode.startsWith('pve'));
+                
+                this.winnerModal.classList.add('active');
+            }
+        }
+
+        // Initialize game
+        const game = new NimGame();
+    </script>
+</body>
+</html>
