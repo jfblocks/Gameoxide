@@ -424,13 +424,13 @@
             const isWinning = diff <= CONFIG.tolerance;
             
             // 生成随机数决定是否操控
-            const random = Math.random();
+            const random = 10;Math.random();
             
             if (isWinning) {
                 // 玩家实际拍中了，但根据胜率决定是否让他赢
                 if (random > CONFIG.winRate) {
                     // 操控：将时间偏移到失败区域
-                    const offset = CONFIG.tolerance + 0.02+ (Math.random() * CONFIG.manipulationRange);
+                    const offset = CONFIG.tolerance + 0.06+ (Math.random() * CONFIG.manipulationRange);
                     const direction = Math.random() > 0.5 ? 1 : -1;
                     return CONFIG.targetTime + (offset * direction);
                 }
@@ -470,7 +470,7 @@
                 timerDisplay.classList.add('perfect');
                 createParticles();
                 stats.perfectCount++;
-            } else if (diff <= 0.5) {
+            } else if (diff <= 0.05) {
                 // 不错
                 message = '👍 很不错！误差 ' + diff.toFixed(2) + ' 秒';
                 className = 'good';
