@@ -430,7 +430,7 @@
                 // 玩家实际拍中了，但根据胜率决定是否让他赢
                 if (random > CONFIG.winRate) {
                     // 操控：将时间偏移到失败区域
-                    const offset = CONFIG.tolerance + 0.05 + (Math.random() * CONFIG.manipulationRange);
+                    const offset = CONFIG.tolerance + 0.02+ (Math.random() * CONFIG.manipulationRange);
                     const direction = Math.random() > 0.5 ? 1 : -1;
                     return CONFIG.targetTime + (offset * direction);
                 }
