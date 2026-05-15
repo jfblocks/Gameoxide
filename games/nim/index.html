@@ -890,15 +890,15 @@
                     labelEl.className = 'pile-label';
                     labelEl.textContent = `第 ${index + 1} 堆`;
 
-                    // const binaryEl = document.createElement('div');
-                    // binaryEl.className = 'binary-display';
-                    // binaryEl.textContent = count.toString(2).padStart(4, '0');
+                    const binaryEl = document.createElement('div');
+                    binaryEl.className = 'binary-display';
+                    binaryEl.textContent = 0//count.toString(2).padStart(4, '0');
 
                     const controlsEl = document.createElement('div');
                     controlsEl.className = 'pile-controls';
 
                     // Quick take buttons
-                    [1, 2, 3,4,5,6,7].forEach(n => {
+                    [1, 2, 3].forEach(n => {
                         if (n <= count) {
                             const btn = document.createElement('button');
                             btn.className = 'take-btn';
@@ -909,7 +909,7 @@
                     });
 
                     // Custom take
-                    if (count > 7) {
+                    if (count > 3) {
                         const customDiv = document.createElement('div');
                         customDiv.className = 'custom-take';
                         
